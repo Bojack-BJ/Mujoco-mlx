@@ -71,9 +71,30 @@ def collider(ncon: int):
 
       fn = collision_fn
 
+      # Conservative broadphase for finite convex geometries. Keep every output
+      # slot so the constraint layout remains identical to the original model.
+      pairs = np.asarray(geom).reshape((-1, 2))
+      separated = np.zeros(n_pairs, dtype=bool)
+      if all(t in (GeomType.BOX, GeomType.MESH) for t in key.types):
+        positions = np.asarray(d.geom_xpos)
+        radius = np.asarray(m.geom_rbound)
+        margin = max(0., 2 * float(np.max(np.asarray(m.geom_margin), initial=0)),
+                     float(np.max(np.asarray(m.pair_margin), initial=0)),
+                     float(getattr(m.opt, 'o_margin', 0.)))
+        # Negative gaps can activate constraints beyond the nominal margin.
+        margin += max(0., -2 * float(np.min(np.asarray(m.geom_gap), initial=0)),
+                      -float(np.min(np.asarray(m.pair_gap), initial=0)))
+        gap = np.linalg.norm(positions[pairs[:, 0]] - positions[pairs[:, 1]], axis=1)
+        separated = gap > radius[pairs].sum(axis=1) + margin + 1e-6
+
       # Build per-pair infos and call fn in a loop (replaces jax.vmap)
       results = []
       for idx in range(n_pairs):
+        if separated[idx]:
+          results.append((mx.full((ncon,), margin + 1.),
+                          mx.zeros((ncon, 3)),
+                          mx.broadcast_to(mx.eye(3), (ncon, 3, 3))))
+          continue
         gi1 = int(g1[idx]) if n_pairs > 1 else int(g1)
         gi2 = int(g2[idx]) if n_pairs > 1 else int(g2)
 
@@ -788,14 +809,20 @@ def _sat_gaussmap(
   a_idx_list = list(range(n_ea)) * n_eb
   b_idx_list = [i for i in range(n_eb) for _ in range(n_ea)]
 
-  normal_a_1 = mx.stack([edge_face_normals_a[a_idx_list[i], 0] for i in range(len(a_idx_list))])
-  normal_a_2 = mx.stack([edge_face_normals_a[a_idx_list[i], 1] for i in range(len(a_idx_list))])
-  normal_b_1 = mx.stack([edge_face_normals_b[b_idx_list[i], 0] for i in range(len(b_idx_list))])
-  normal_b_2 = mx.stack([edge_face_normals_b[b_idx_list[i], 1] for i in range(len(b_idx_list))])
-  is_minkowski_face = mx.stack([
-      _arcs_intersect(normal_a_1[i], normal_a_2[i], -normal_b_1[i], -normal_b_2[i])
-      for i in range(len(a_idx_list))
-  ])
+  ai, bi = mx.array(a_idx_list), mx.array(b_idx_list)
+  normal_a_1 = edge_face_normals_a[ai, 0]
+  normal_a_2 = edge_face_normals_a[ai, 1]
+  normal_b_1 = -edge_face_normals_b[bi, 0]
+  normal_b_2 = -edge_face_normals_b[bi, 1]
+  def cross_rows(a, b):
+    return mx.stack([a[:, 1]*b[:, 2]-a[:, 2]*b[:, 1],
+                     a[:, 2]*b[:, 0]-a[:, 0]*b[:, 2],
+                     a[:, 0]*b[:, 1]-a[:, 1]*b[:, 0]], axis=-1)
+  ba = cross_rows(normal_a_2, normal_a_1)
+  dc = cross_rows(normal_b_2, normal_b_1)
+  cba, dba = mx.sum(normal_b_1*ba, axis=-1), mx.sum(normal_b_2*ba, axis=-1)
+  adc, bdc = mx.sum(normal_a_1*dc, axis=-1), mx.sum(normal_a_2*dc, axis=-1)
+  is_minkowski_face = (cba*dba < 0) & (adc*bdc < 0) & (cba*bdc > 0)
 
   # get distances
   edge_a_dirs = mx.stack([math.normalize(edges_a[i, 0] - edges_a[i, 1]) for i in range(n_ea)])
@@ -809,16 +836,13 @@ def _sat_gaussmap(
   edge_b_pt = edges_b_sel[:, 0]
   edge_b_pt_2 = edges_b_sel[:, 1]
 
-  def get_normals(a_dir, a_pt, b_dir):
-    edge_axis = math._cross(a_dir, b_dir)
-    degenerate_edge_axis = mx.sum(edge_axis ** 2) < 1e-6
-    edge_axis = math.normalize(edge_axis)
-    sign = mx.where(mx.sum(edge_axis * (a_pt - centroid_a)) > 0.0, mx.array(1.0), mx.array(-1.0))
-    return edge_axis * sign, degenerate_edge_axis
-
-  edge_normals_res = [get_normals(edge_a_dir[i], edge_a_pt[i], edge_b_dir[i]) for i in range(len(a_idx_list))]
-  edge_axes = mx.stack([r[0] for r in edge_normals_res])
-  degenerate_edge_axes = mx.stack([r[1] for r in edge_normals_res])
+  edge_axes = cross_rows(edge_a_dir, edge_b_dir)
+  squared = mx.sum(edge_axes**2, axis=-1)
+  degenerate_edge_axes = squared < 1e-6
+  norms = mx.sqrt(squared)
+  edge_axes = edge_axes / mx.where(norms == 0, mx.array(1.), norms)[:, None]
+  signs = mx.where(mx.sum(edge_axes * (edge_a_pt-centroid_a), axis=-1) > 0, 1., -1.)
+  edge_axes = edge_axes * signs[:, None]
   edge_dist = _vmap_dot(edge_axes, edge_b_pt - edge_a_pt)
   # handle degenerate axis
   edge_dist = mx.where(degenerate_edge_axes, mx.array(-float('inf')), edge_dist)
