@@ -8,10 +8,35 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent
 mujoco.__path__.append(str(ROOT))
 import mlx.core as mx
-from mujoco.mjx_mlx._src import constraint, forward, io, passive, solver
+from mujoco.mjx_mlx._src import constraint, forward, io, passive, solver, support
 
 
 class AuditEdgeCases(unittest.TestCase):
+    def test_native_mass_matrix_precision(self):
+        """Float32 mass assembly must not silently use reduced input precision."""
+        # Four bodies exercise the GPU matrix-multiply path used by the hand,
+        # while excluding collision/solver error and accumulated integration.
+        masses = (.08, .1, .06, .07)
+        bodies = ''.join(
+            f'<body pos="{i * .4} 0 .3"><freejoint/>'
+            f'<geom type="box" size=".02 .03 .04" mass="{mass}" '
+            f'contype="0" conaffinity="0"/></body>'
+            for i, mass in enumerate(masses))
+        m = mujoco.MjModel.from_xml_string(
+            '<mujoco><option gravity="0 0 0"><flag contact="disable"/></option>'
+            f'<worldbody>{bodies}</worldbody></mujoco>')
+        self.assertEqual((m.nq, m.nv), (28, 24))
+        x = io.put_model(m)
+        d = forward.fwd_position(x, io.make_data(m))
+        native = mujoco.MjData(m)
+        mujoco.mj_forward(m, native)
+        expected = np.zeros((m.nv, m.nv))
+        mujoco.mj_fullM(m, expected, native.qM)
+        np.testing.assert_allclose(
+            np.asarray(support.full_m(x, d)), expected, rtol=0, atol=1e-7,
+            err_msg='Mass-matrix precision regression: launch a fresh process with '
+                    'MLX_ENABLE_TF32=0 before importing MLX; do not relax the tolerance.')
+
     def test_elliptic_without_contact_slots(self):
         """A cone setting must not prevent joint-only constraints being solved."""
         for kind in ("Newton", "CG"):

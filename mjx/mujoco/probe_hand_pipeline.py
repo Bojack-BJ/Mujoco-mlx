@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
+import os
 from pathlib import Path
 import platform
 import signal
@@ -27,6 +28,7 @@ p.add_argument('--output', type=Path, required=True)
 a = p.parse_args()
 root = Path(__file__).resolve().parents[2]
 report = dict(steps_requested=a.steps, steps_completed=0, events=[],
+    MLX_ENABLE_TF32=os.environ.get('MLX_ENABLE_TF32', '1 (MLX default)'),
     python=platform.python_version(), mujoco=mujoco.__version__,
     mlx=importlib.metadata.version('mlx'), device=str(mx.default_device()),
     revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),

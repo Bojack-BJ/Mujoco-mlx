@@ -4,6 +4,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -28,6 +29,7 @@ with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
             except Exception as exc:
                 results.append(dict(name=name, status='failed', error=repr(exc)))
 report = dict(tests=results, log=log.getvalue(),
+              MLX_ENABLE_TF32=os.environ.get('MLX_ENABLE_TF32', '1 (MLX default)'),
               scope='All upstream test functions; many are import-only. Excludes math throughput benchmark.')
 for status in ('passed', 'failed', 'skipped'):
     report[status] = sum(r['status'] == status for r in results)

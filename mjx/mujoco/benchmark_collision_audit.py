@@ -105,6 +105,7 @@ def audit(args):
     started = time.perf_counter()
     report = dict(status='running', phase='imports',
                   benchmark='paired_collision_only_ablation',
+                  MLX_ENABLE_TF32=os.environ.get('MLX_ENABLE_TF32', '1 (MLX default)'),
                   baseline_requested=BASELINE, native_warmup_steps=args.native_warmup,
                   mlx_prepare_steps=args.mlx_prepare_steps,
                   require_active_contacts=True,

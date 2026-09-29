@@ -118,6 +118,7 @@ def worker(a):
                 backend=a.backend, num_envs=a.num_envs, steps_per_env=a.steps,
                 substeps=a.substeps, native_warmup_steps=a.native_warmup,
                 action_seed=a.action_seed, environments=[], resident_envs=1,
+                MLX_ENABLE_TF32=os.environ.get('MLX_ENABLE_TF32', '1 (MLX default)'),
                 action_amplitude=a.action_amplitude,
                 max_control_offset=a.max_control_offset,
                 methodology='Instrumented serial simulation, no rendering or PPO. '

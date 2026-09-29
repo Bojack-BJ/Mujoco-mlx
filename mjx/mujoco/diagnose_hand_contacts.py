@@ -95,6 +95,7 @@ def worker(args):
         report.update(python=platform.python_version(), python_executable=sys.executable,
                       platform=platform.platform(), mujoco=mujoco.__version__,
                       mlx=importlib.metadata.version('mlx'), device=str(mx.default_device()),
+                      MLX_ENABLE_TF32=os.environ.get('MLX_ENABLE_TF32', '1 (MLX default)'),
                       revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
                       dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=root, text=True).strip()),
                       source_sha256={str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
