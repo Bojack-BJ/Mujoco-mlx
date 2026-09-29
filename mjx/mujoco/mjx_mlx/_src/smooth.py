@@ -619,16 +619,20 @@ def com_vel(m: Model, d: Data) -> Data:
             di = dof_adr + k
             cvel = cvel + d.cdof[di] * d.qvel[di]
             cdof_dot_arr[di] = mx.zeros(6)
-          # Angular dofs (next 3): motion_cross
-          for k in range(3):
-            di = dof_adr + 3 + k
-            cdof_dot_arr[di] = mjx_math.motion_cross(cvel, d.cdof[di])
-            cvel = cvel + d.cdof[di] * d.qvel[di]
+          velocity_beg = dof_adr + 3
         else:
-          for k in range(dof_width):
-            di = dof_adr + k
-            cdof_dot_arr[di] = mjx_math.motion_cross(cvel, d.cdof[di])
-            cvel = cvel + d.cdof[di] * d.qvel[di]
+          velocity_beg = dof_adr
+
+        # A joint's rotational DOFs are simultaneous, not serial joints.
+        # Every derivative uses the same incoming velocity (after translation
+        # for a free joint). Updating cvel inside this loop creates spurious
+        # cross-axis bias forces for free and ball joints.
+        velocity_end = dof_adr + dof_width
+        for di in range(velocity_beg, velocity_end):
+          cdof_dot_arr[di] = mjx_math.motion_cross(cvel, d.cdof[di])
+        cvel = cvel + mx.sum(
+            d.cdof[velocity_beg:velocity_end]
+            * d.qvel[velocity_beg:velocity_end, None], axis=0)
 
       cvel_list[body_id] = cvel
 
