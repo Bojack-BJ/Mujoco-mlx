@@ -333,15 +333,9 @@ def _update_constraint(m: Model, d: Data, ctx: Context) -> Context:
     dim = (d._impl or d).contact.dim[friction_idx]
 
     # Gather Jaref slices for each elliptic contact
-    jaref_padded = mx.concatenate([ctx.Jaref, mx.zeros(3)])
-    u_list = []
-    for i in range(len(efc_address)):
-      addr = int(efc_address[i])
-      u_list.append(jaref_padded[addr:addr + 6])
-    if u_list:
-      u = mx.stack(u_list) * ctx.fri
-    else:
-      u = mx.array(0.0)
+    addresses = mx.array(efc_address[:, None] + np.arange(6)[None, :])
+    jaref_padded = mx.concatenate([ctx.Jaref, mx.zeros(5)])
+    u = jaref_padded[addresses] * ctx.fri if len(dim) else mx.array(0.0)
 
     if isinstance(u, mx.array) and u.ndim >= 2:
       mu = ctx.fri[:, 0]
@@ -351,12 +345,15 @@ def _update_constraint(m: Model, d: Data, ctx: Context) -> Context:
       # bottom zone: quadratic
       bottom_zone = ((t <= 0) & (n < 0)) | ((t > 0) & ((mu * n + t) <= 0))
       # Set active for bottom-zone contacts
-      for i in range(len(dim)):
-        condim = int(dim[i])
-        addr = int(efc_address[i])
-        for j in range(condim):
-          idx_mask = mx.arange(active.shape[0]) == (addr + j)
-          active = mx.where(idx_mask, bottom_zone[i], active)
+      owner_np = np.full(active.shape[0], -1, dtype=np.int32)
+      column_np = np.zeros(active.shape[0], dtype=np.int32)
+      for i, (addr, width) in enumerate(zip(efc_address, dim)):
+        owner_np[addr:addr + width] = i
+        column_np[addr:addr + width] = np.arange(width)
+      owner = mx.array(np.maximum(owner_np, 0))
+      column = mx.array(column_np)
+      contact_row = mx.array(owner_np >= 0)
+      active = mx.where(contact_row, bottom_zone[owner], active)
 
       efc_force = (d._impl or d).efc_D * -ctx.Jaref * active + floss_force
       cost = 0.5 * mx.sum((d._impl or d).efc_D * ctx.Jaref * ctx.Jaref * active)
@@ -375,14 +372,8 @@ def _update_constraint(m: Model, d: Data, ctx: Context) -> Context:
       force_fri = (-force / t_safe)[:, None] * u[:, 1:] * friction
 
       # Scatter forces back to efc_force
-      for i in range(len(efc_address)):
-        addr = int(efc_address[i])
-        idx_n = mx.arange(efc_force.shape[0]) == addr
-        efc_force = mx.where(idx_n, efc_force + force[i], efc_force)
-        condim = int(dim[i])
-        for j in range(condim - 1):
-          idx_j = mx.arange(efc_force.shape[0]) == (addr + 1 + j)
-          efc_force = mx.where(idx_j, efc_force + force_fri[i, j], efc_force)
+      cone_force = mx.concatenate([force[:, None], force_fri], axis=1)
+      efc_force = efc_force + mx.where(contact_row, cone_force[owner, column], 0.)
 
       # cone hessian
       h = mx.array(0.0)
@@ -390,27 +381,14 @@ def _update_constraint(m: Model, d: Data, ctx: Context) -> Context:
         t_clamped = mx.maximum(t, mx.array(mujoco.mjMINVAL))
         ttt = mx.maximum(t_clamped * t_clamped * t_clamped, mx.array(mujoco.mjMINVAL))
 
-        h_list = []
-        for i in range(len(mu)):
-          ui = u[i]
-          # h = mu*N/T^3 * U*U'
-          h_i = (mu[i] * n[i] / ttt[i]) * (ui[:, None] * ui[None, :])
-          # add diagonal: (mu^2 - mu*N/T) * I
-          h_i = h_i + (mu[i] * mu[i] - mu[i] * n[i] / t_clamped[i]) * mx.eye(6)
-          # set first row/col: (1, -mu/T * U)
-          h_0 = mx.concatenate([mx.array([1.0]), -mu[i] / t_clamped[i] * ui[1:]])
-          # Build with first row replaced
-          h_i = mx.concatenate([h_0[None, :], h_i[1:, :]], axis=0)
-          # Build with first col replaced
-          h_i = mx.concatenate([h_0[:, None], h_i[:, 1:]], axis=1)
-          # pre and post multiply by diag(fri), scale by dm
-          fri_i = ctx.fri[i]
-          h_i = dm[i] * (fri_i[:, None] * h_i * fri_i[None, :])
-          # mask by middle_zone
-          h_i = h_i * middle_zone[i]
-          h_list.append(h_i)
+        h = (mu * n / ttt)[:, None, None] * (u[:, :, None] * u[:, None, :])
+        h = h + (mu * mu - mu * n / t_clamped)[:, None, None] * mx.eye(6)
+        h0 = mx.concatenate([mx.ones((len(mu), 1)),
+                             (-mu / t_clamped)[:, None] * u[:, 1:]], axis=1)
+        h = mx.concatenate([h0[:, None, :], h[:, 1:, :]], axis=1)
+        h = mx.concatenate([h0[:, :, None], h[:, :, 1:]], axis=2)
+        h = (dm * middle_zone)[:, None, None] * ctx.fri[:, :, None] * h * ctx.fri[:, None, :]
 
-        h = mx.stack(h_list) if h_list else mx.array(0.0)
     else:
       efc_force = (d._impl or d).efc_D * -ctx.Jaref * active + floss_force
       cost = 0.5 * mx.sum((d._impl or d).efc_D * ctx.Jaref * ctx.Jaref * active)
@@ -458,22 +436,16 @@ def _update_gradient(m: Model, d: Data, ctx: Context) -> Context:
     mgrad = smooth.solve_m(m, d, grad)
   elif m.opt.solver == SolverType.NEWTON:
     if m.opt.cone == ConeType.ELLIPTIC:
-      cm = mx.diag((d._impl or d).efc_D * ctx.active)
-      efc_address = (d._impl or d).contact.efc_address[(d._impl or d).contact.dim > 1]
-      dim = (d._impl or d).contact.dim[(d._impl or d).contact.dim > 1]
-      # set efc of cone H along diagonal
-      for i, (condim, addr) in enumerate(zip(dim, efc_address)):
-        condim = int(condim)
-        addr = int(addr)
-        h_cone = ctx.h[i, :condim, :condim]
-        # Add h_cone to cm[addr:addr+condim, addr:addr+condim]
-        for r in range(condim):
-          for c in range(condim):
-            row_mask = mx.arange(cm.shape[0]) == (addr + r)
-            col_mask = mx.arange(cm.shape[1]) == (addr + c)
-            mask_2d = row_mask[:, None] & col_mask[None, :]
-            cm = mx.where(mask_2d, cm + h_cone[r, c], cm)
-      h = (d._impl or d).efc_J.T @ cm @ (d._impl or d).efc_J
+      # Contract small cone blocks directly; never allocate nefc x nefc.
+      impl = d._impl or d
+      jac = impl.efc_J
+      h = (jac.T * (impl.efc_D * ctx.active)) @ jac
+      addresses = impl.contact.efc_address[impl.contact.dim > 1]
+      if len(addresses):
+        indices = mx.array(addresses[:, None] + np.arange(6)[None, :])
+        padded = mx.concatenate([jac, mx.zeros((5, m.nv))], axis=0)
+        blocks = padded[indices]
+        h = h + mx.sum(mx.transpose(blocks, (0, 2, 1)) @ ctx.h @ blocks, axis=0)
     else:
       h = ((d._impl or d).efc_J.T * ((d._impl or d).efc_D * ctx.active)) @ (d._impl or d).efc_J
     h = support.full_m(m, d) + h
@@ -542,25 +514,18 @@ def _linesearch(m: Model, d: Data, ctx: Context) -> Context:
     mask = (d._impl or d).contact.dim > 1
     mask_idx = np.nonzero(mask)[0]
     if mask_idx.size > 0:
-      # complete vector quadratic (for bottom zone)
-      for ii in range(mask_idx.size):
-        condim = int((d._impl or d).contact.dim[mask_idx[ii]])
-        addr = int((d._impl or d).contact.efc_address[mask_idx[ii]])
-        for jj in range(1, condim):
-          quad_sum = quad[addr] + quad[addr + jj]
-          # Scatter back
-          quad = mx.concatenate([
-              quad[:addr], quad_sum[None, :], quad[addr + 1:]
-          ], axis=0)
-
-      # rescale to make primal cone circular
-      jv_padded = mx.concatenate([jv, mx.zeros(3)])
+      dims = (d._impl or d).contact.dim[mask_idx]
       efc_elliptic = (d._impl or d).contact.efc_address[mask_idx]
-      v_list = []
-      for addr in efc_elliptic:
-        addr = int(addr)
-        v_list.append(jv_padded[addr:addr + 6])
-      v = mx.stack(v_list) * ctx.fri
+      indices = mx.array(efc_elliptic[:, None] + np.arange(6)[None, :])
+      valid = mx.arange(6)[None, :] < mx.array(dims)[:, None]
+      padded_quad = mx.concatenate([quad, mx.zeros((5, 3))], axis=0)
+      sums = mx.sum(padded_quad[indices] * valid[:, :, None], axis=1)
+      normal_owner = np.full(quad.shape[0], -1, dtype=np.int32)
+      normal_owner[efc_elliptic] = np.arange(len(efc_elliptic))
+      quad = mx.where(mx.array(normal_owner >= 0)[:, None],
+                      sums[mx.array(np.maximum(normal_owner, 0))], quad)
+      jv_padded = mx.concatenate([jv, mx.zeros(5)])
+      v = jv_padded[indices] * ctx.fri
 
       uu = mx.sum(ctx.u[:, 1:] * ctx.u[:, 1:], axis=1)
       v0 = v[:, 0]
