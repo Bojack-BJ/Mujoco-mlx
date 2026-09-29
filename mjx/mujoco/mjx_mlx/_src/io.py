@@ -45,7 +45,9 @@ def _numpy_to_mlx(tree):
       updates = {}
       for field in dataclasses.fields(node):
         value = getattr(node, field.name)
-        if field.type is mx.array and isinstance(value, np.ndarray):
+        if field.type is mx.array and isinstance(
+            value, (np.ndarray, np.generic, int, float, bool)
+        ):
           updates[field.name] = mx.array(value)
         elif dataclasses.is_dataclass(value):
           updates[field.name] = convert_data(value)
@@ -358,10 +360,6 @@ def make_data(
   Returns:
     an initialized mjx_mlx.Data with MLX arrays
   """
-  # Use the original JAX collision_driver and constraint modules which
-  # operate on numpy/MjModel data before array placement.
-  from mujoco.mjx_mlx._src import types as jax_types  # pylint: disable=g-import-not-at-top
-
   dim = collision_driver.make_condim(m)
   efc_type = constraint.make_efc_type(m, dim)
   ne, nf, nl, nc = constraint.counts(efc_type)
@@ -488,6 +486,8 @@ def _put_contact(
         k: np.zeros((1,) + v.shape[1:], dtype=v.dtype) for k, v in fields.items()
     }
     zero['dist'][:] = 1e10
+    for name in ('geom', 'geom1', 'geom2'):
+      zero[name][:] = -1
     fields = {k: np.concatenate([fields[k], zero[k]]) for k in fields}
     fields = {k: v[contact_map] for k, v in fields.items()}
 
@@ -502,15 +502,7 @@ def _put_data_public_fields(d: mujoco.MjData) -> Dict[str, Any]:
   fields = {
       f.name: getattr(d, f.name)
       for f in types.Data.fields()
-      if f.name not in (
-          'ne', 'nf', 'nl', 'nefc', 'ncon', 'contact', 'efc_type',
-          'solver_niter', 'cinert', 'ten_wrapadr', 'ten_wrapnum', 'ten_J',
-          'wrap_obj', 'wrap_xpos', 'actuator_moment', 'crb', 'qM', 'M',
-          'qLD', 'qLDiagInv', 'ten_velocity', 'actuator_velocity', 'cacc',
-          'cfrc_int', 'cfrc_ext', 'subtree_linvel', 'subtree_angmom',
-          'efc_J', 'efc_pos', 'efc_margin', 'efc_frictionloss', 'efc_D',
-          'efc_aref', 'efc_force',
-      )
+      if f.name != '_impl'
   }
   # MJX uses square matrices for these fields:
   for fname in ('xmat', 'ximat', 'geom_xmat', 'site_xmat', 'cam_xmat'):
@@ -518,6 +510,60 @@ def _put_data_public_fields(d: mujoco.MjData) -> Dict[str, Any]:
       fields[fname] = fields[fname].reshape((-1, 3, 3))
 
   return fields
+
+
+def _noncontact_row_keys(m: mujoco.MjModel):
+  """Static (constraint type, object id, component) order used by assembly.
+
+  Native MuJoCo omits inactive equalities and limits.  Their remaining rows
+  cannot be copied into the prefix of a fixed-size MLX constraint group.
+  """
+  disable = m.opt.disableflags
+  if disable & types.DisableBit.CONSTRAINT:
+    return []
+  keys = []
+  if not disable & types.DisableBit.EQUALITY:
+    for eq_type, width in ((types.EqType.CONNECT, 3), (types.EqType.WELD, 6),
+                           (types.EqType.JOINT, 1), (types.EqType.TENDON, 1)):
+      for obj in np.flatnonzero(m.eq_type == eq_type):
+        keys.extend((int(types.ConstraintType.EQUALITY), int(obj), component)
+                    for component in range(width))
+  if not disable & types.DisableBit.FRICTIONLOSS:
+    for kind, ids in (
+        (types.ConstraintType.FRICTION_DOF, np.flatnonzero(m.dof_frictionloss > 0)),
+        (types.ConstraintType.FRICTION_TENDON, np.flatnonzero(m.tendon_frictionloss > 0)),
+    ):
+      keys.extend((int(kind), int(obj), 0) for obj in ids)
+  if not disable & types.DisableBit.LIMIT:
+    # make_constraint assembles ball joints before slide/hinge joints.
+    ball = (m.jnt_type == types.JointType.BALL) & m.jnt_limited
+    other = np.isin(m.jnt_type, (types.JointType.SLIDE, types.JointType.HINGE)) & m.jnt_limited
+    for ids in (np.flatnonzero(ball), np.flatnonzero(other)):
+      keys.extend((int(types.ConstraintType.LIMIT_JOINT), int(obj), 0) for obj in ids)
+    keys.extend((int(types.ConstraintType.LIMIT_TENDON), int(obj), 0)
+                for obj in np.flatnonzero(m.tendon_limited))
+  return keys
+
+
+def _noncontact_row_map(m: mujoco.MjModel, d: mujoco.MjData,
+                        efc_type: np.ndarray, count: int) -> np.ndarray:
+  """Return static destination rows for the materialized native rows."""
+  keys = _noncontact_row_keys(m)
+  if len(keys) != count or not np.array_equal(
+      np.asarray([key[0] for key in keys]), efc_type[:count]):
+    raise NotImplementedError('Unsupported static non-contact constraint layout.')
+  slots = {key: row for row, key in enumerate(keys)}
+  occurrences = {}
+  result = []
+  for row in range(d.ne + d.nf + d.nl):
+    kind, obj = int(d.efc_type[row]), int(d.efc_id[row])
+    component = occurrences.get((kind, obj), 0)
+    occurrences[kind, obj] = component + 1
+    key = kind, obj, component
+    if key not in slots:
+      raise NotImplementedError(f'Cannot map native constraint row {row}: {key}.')
+    result.append(slots[key])
+  return np.asarray(result, dtype=np.int32)
 
 
 def put_data(
@@ -533,8 +579,8 @@ def put_data(
   Returns:
     an mjx_mlx.Data with MLX arrays
   """
-  from mujoco.mjx_mlx._src import types as jax_types  # pylint: disable=g-import-not-at-top
-
+  if not isinstance(m, mujoco.MjModel) or not isinstance(d, mujoco.MjData):
+    raise TypeError('put_data requires one native MjModel and MjData.')
   dim = collision_driver.make_condim(m)
   efc_type = constraint.make_efc_type(m, dim)
   efc_address = constraint.make_efc_address(m, dim, efc_type)
@@ -568,7 +614,7 @@ def put_data(
       if hasattr(d, name)
   }
   # MJX does not support islanding, so only transfer the first solver_niter
-  impl_fields['solver_niter'] = impl_fields['solver_niter'][0]
+  impl_fields['solver_niter'] = np.asarray(impl_fields['solver_niter'][0])
 
   # convert sparse actuator_moment to dense matrix
   moment = np.zeros((m.nu, m.nv))
@@ -584,18 +630,22 @@ def put_data(
   # convert ten_J to dense matrix
   if m.ntendon:
     ten_J = np.zeros((m.ntendon, m.nv))
-    mujoco.mju_sparse2dense(
-        ten_J,
-        d.ten_J,
-        m.ten_J_rownnz,
-        m.ten_J_rowadr,
-        m.ten_J_colind,
-    )
+    if hasattr(m, 'ten_J_rownnz'):
+      # Newer MuJoCo versions store fixed tendon sparsity on Model.
+      mujoco.mju_sparse2dense(ten_J, d.ten_J, m.ten_J_rownnz,
+                             m.ten_J_rowadr, m.ten_J_colind)
+    elif mujoco.mj_isSparse(m):
+      # MuJoCo 3.5 keeps a padded sparse buffer and its indices on Data.
+      mujoco.mju_sparse2dense(ten_J, d.ten_J.reshape(-1), d.ten_J_rownnz,
+                             d.ten_J_rowadr, d.ten_J_colind.reshape(-1))
+    else:
+      ten_J[:] = d.ten_J.reshape((m.ntendon, m.nv))
   else:
     ten_J = np.zeros((m.ntendon, m.nv))
   impl_fields['ten_J'] = ten_J
 
   contact, contact_map = _put_contact(d.contact, dim, efc_address)
+  noncontact_map = _noncontact_row_map(m, d, efc_type, ne + nf + nl)
 
   # pad efc fields: MuJoCo efc arrays are sparse for inactive constraints.
   # efc_J is also optionally column-sparse (typically for large nv). MJX-MLX
@@ -627,13 +677,7 @@ def put_data(
       'efc_force',
   ):
     value = np.zeros((nefc, m.nv)) if fname == 'efc_J' else np.zeros(nefc)
-    for i in range(3):
-      value_beg = sum([ne, nf][:i])
-      d_beg = sum([d.ne, d.nf][:i])
-      size = [d.ne, d.nf, d.nl][i]
-      value[value_beg : value_beg + size] = impl_fields[fname][
-          d_beg : d_beg + size
-      ]
+    value[noncontact_map] = impl_fields[fname][:len(noncontact_map)]
 
     for id_to, id_from in enumerate(contact_map):
       if id_from == -1:
@@ -655,21 +699,17 @@ def put_data(
     impl_fields['qM'] = np.zeros((m.nv, m.nv))
     mujoco.mj_fullM(m, impl_fields['qM'], d.qM)
     try:
-      impl_fields['qLD'], _ = scipy.linalg.cho_factor(impl_fields['qM'])
+      # smooth.solve_m consumes a lower-triangular Cholesky factor.
+      impl_fields['qLD'] = scipy.linalg.cholesky(impl_fields['qM'], lower=True)
     except scipy.linalg.LinAlgError:
       impl_fields['qLD'] = np.zeros((m.nv, m.nv))
     impl_fields['qLDiagInv'] = np.zeros(0)
 
-  # copy because conversion is from numpy
+  impl_fields.update(ne=ne, nf=nf, nl=nl, nefc=nefc, ncon=ncon,
+                     contact=contact, efc_type=efc_type)
+  # The native arrays are mutable views: import an independent snapshot.
   data = types.Data(
-      ne=ne,
-      nf=nf,
-      nl=nl,
-      nefc=nefc,
-      ncon=ncon,
-      contact=contact,
-      efc_type=efc_type,
-      **{k: copy.copy(v) for k, v in impl_fields.items()},
+      _impl=types.DataMLX(**{k: copy.copy(v) for k, v in impl_fields.items()}),
       **{k: copy.copy(v) for k, v in fields.items()},
   )
 
@@ -678,11 +718,33 @@ def put_data(
   return data
 
 
-def _get_contact(c: mujoco._structs._MjContactList, cx: types.Contact):
+def _contact_indices(m: mujoco.MjModel, cx: types.Contact) -> np.ndarray:
+  """Select materialized contacts, excluding padding and separated slots.
+
+  Unlike a dist <= 0 filter, this retains positive-distance contacts generated
+  inside a contact margin, including contacts that are inactive due to gap.
+  """
+  geom = np.asarray(cx.geom)
+  valid = np.all((geom >= 0) & (geom < m.ngeom), axis=1)
+  ids = np.flatnonzero(valid)
+  if not ids.size:
+    return ids
+  pairs = geom[ids]
+  margin = np.sum(m.geom_margin[pairs], axis=1)
+  for i in range(m.npair):
+    pair = np.array([m.pair_geom1[i], m.pair_geom2[i]])
+    match = np.all(pairs == pair, axis=1) | np.all(pairs == pair[::-1], axis=1)
+    margin[match] = m.pair_margin[i]
+  if m.opt.enableflags & mujoco.mjtEnableBit.mjENBL_OVERRIDE:
+    margin[:] = m.opt.o_margin
+  threshold = np.maximum(margin, np.asarray(cx.includemargin)[ids])
+  return ids[np.asarray(cx.dist)[ids] <= threshold]
+
+
+def _get_contact(c: mujoco._structs._MjContactList, cx: types.Contact,
+                 con_id: np.ndarray):
   """Converts mjx_mlx.Contact to mujoco._structs._MjContactList."""
   # Convert MLX arrays to numpy for writing back to MuJoCo structs
-  dist = np.array(cx.dist) if isinstance(cx.dist, mx.array) else cx.dist
-  con_id = np.nonzero(dist <= 0)[0]
   for field in types.Contact.fields():
     value = getattr(cx, field.name)
     if isinstance(value, mx.array):
@@ -698,24 +760,21 @@ def get_data_into(
     m: mujoco.MjModel,
     d: types.Data,
 ):
-  """Gets mjx_mlx.Data into an existing mujoco.MjData or list."""
-  is_batched = isinstance(result, list)
-  if is_batched:
-    qpos = np.array(d.qpos) if isinstance(d.qpos, mx.array) else d.qpos
-    if len(qpos.shape) < 2:
-      raise ValueError('destination is a list, but d is not batched.')
-  else:
-    qpos = np.array(d.qpos) if isinstance(d.qpos, mx.array) else d.qpos
-    if len(qpos.shape) >= 2:
-      raise ValueError('destination is an MjData, but d is batched.')
+  """Export one MLX state; batched-environment conversion is not supported."""
+  if isinstance(result, list) or len(d.qpos.shape) != 1:
+    raise NotImplementedError('Batched Data export is not supported by MLX.')
+  if not isinstance(result, mujoco.MjData):
+    raise TypeError('destination must be one native MjData.')
+  if not isinstance(d._impl, types.DataMLX):
+    raise TypeError('Data must contain its nested DataMLX implementation.')
+  if d.qpos.shape != (m.nq,) or d.qvel.shape != (m.nv,):
+    raise ValueError('Data state dimensions do not match the native model.')
 
   # Convert the full tree to numpy
   from mujoco.mjx_mlx._src import dataclasses as mjx_dataclasses  # pylint: disable=g-import-not-at-top
   d = mjx_dataclasses.tree_map(
       lambda x: np.array(x) if isinstance(x, mx.array) else x, d
   )
-
-  batch_size = d.qpos.shape[0] if is_batched else 1
 
   dof_i, dof_j = [], []
   for i in range(m.nv):
@@ -725,32 +784,51 @@ def get_data_into(
       dof_j.append(j)
       j = int(m.dof_parentid[j])
 
-  for i in range(batch_size):
-    if is_batched:
-      # Slice batch dimension from all fields
-      d_i = mjx_dataclasses.tree_map(lambda x, i=i: x[i], d)
-    else:
-      d_i = d
-    result_i = result[i] if is_batched else result
-
-    ncon = (d_i.contact.dist <= 0).sum()
-    efc_active = (d_i.efc_J != 0).any(axis=1)
+  # Keep the export body scoped separately from the conversion above.
+  for d_i, result_i in ((d, result),):
+    impl = d_i._impl
+    con_id = _contact_indices(m, impl.contact)
+    ncon = int(con_id.size)
+    efc_active = (impl.efc_J != 0).any(axis=1)
     nefc = int(efc_active.sum())
-    nj = (d_i.efc_J != 0).sum() if support.is_sparse(m) else nefc * m.nv
+    sparse = bool(mujoco.mj_isSparse(m))
+    nj = int((impl.efc_J != 0).sum()) if sparse else nefc * m.nv
 
     if ncon != result_i.ncon or nefc != result_i.nefc or nj != result_i.nJ:
       mujoco._functions._realloc_con_efc(result_i, ncon=ncon, nefc=nefc, nJ=nj)  # pylint: disable=protected-access
 
-    all_field_names = {f.name for f in types.Data.fields()}
+    keys = _noncontact_row_keys(m)
+    if len(keys) != impl.ne + impl.nf + impl.nl:
+      raise NotImplementedError('Unsupported static non-contact constraint layout.')
+    # Native efc_id refers to the original object for non-contact rows and to
+    # the *compacted* contact index for contact rows.
+    row_ids = np.full(impl.nefc, -1, dtype=np.int32)
+    row_ids[:len(keys)] = [key[1] for key in keys]
+    for compact_id, slot in enumerate(con_id):
+      address = int(impl.contact.efc_address[slot])
+      width = int(impl.contact.dim[slot])
+      if width > 1 and m.opt.cone == types.ConeType.PYRAMIDAL:
+        width = 2 * (width - 1)
+      if address >= 0:
+        row_ids[address:address + width] = compact_id
+    if np.any(row_ids[efc_active] < 0):
+      raise ValueError('Active constraint rows have no exportable object/contact.')
+    result_i.efc_id[:] = row_ids[efc_active]
 
-    for field in types.Data.fields():
+    for field in (*types.Data.fields(), *types.DataMLX.fields()):
       if field.name not in mujoco.MjData.__dict__.keys():
         continue
 
       if field.name == 'contact':
-        _get_contact(result_i.contact, d_i.contact)
+        _get_contact(result_i.contact, impl.contact, con_id)
         efc_map = np.cumsum(efc_active) - 1
-        result_i.contact.efc_address[:] = efc_map[result_i.contact.efc_address]
+        address = np.asarray(impl.contact.efc_address)[con_id]
+        mapped = np.full(ncon, -1, dtype=np.int32)
+        valid = (address >= 0) & (address < efc_active.size)
+        active = np.zeros(ncon, dtype=bool)
+        active[valid] = efc_active[address[valid]]
+        mapped[active] = efc_map[address[active]]
+        result_i.contact.efc_address[:] = mapped
         continue
 
       # MuJoCo actuator_moment is sparse, MJX uses a dense representation.
@@ -762,7 +840,7 @@ def get_data_into(
         if m.nu:
           mujoco.mju_dense2sparse(
               actuator_moment,
-              d_i.actuator_moment,
+              np.ascontiguousarray(impl.actuator_moment, dtype=np.float64),
               moment_rownnz,
               moment_rowadr,
               moment_colind,
@@ -775,37 +853,51 @@ def get_data_into(
 
       # MuJoCo ten_J is sparse, MJX uses a dense representation.
       if field.name == 'ten_J':
-        ten_j_rownnz = np.zeros(m.ntendon, dtype=np.int32)
-        ten_j_rowadr = np.zeros(m.ntendon, dtype=np.int32)
-        ten_j_colind = np.zeros(m.nJten, dtype=np.int32)
-        ten_j = np.zeros(m.nJten)
-        if m.ntendon:
+        if hasattr(m, 'ten_J_rownnz'):
+          ten_j = np.zeros(result_i.ten_J.shape)
+          # Preserve Model-owned structural zeros and ordering.
+          for row in range(m.ntendon):
+            start = m.ten_J_rowadr[row]
+            end = start + m.ten_J_rownnz[row]
+            ten_j[start:end] = impl.ten_J[row, m.ten_J_colind[start:end]]
+          result_i.ten_J[:] = ten_j
+        elif sparse and m.ntendon:
+          # MuJoCo 3.5 owns dynamic sparsity metadata on Data instead.
+          ten_j = np.zeros(result_i.ten_J.size)
+          rownnz = np.zeros(m.ntendon, dtype=np.int32)
+          rowadr = np.zeros(m.ntendon, dtype=np.int32)
+          colind = np.zeros(result_i.ten_J_colind.size, dtype=np.int32)
           mujoco.mju_dense2sparse(
-              ten_j,
-              d_i.ten_J,
-              ten_j_rownnz,
-              ten_j_rowadr,
-              ten_j_colind,
-          )
-        result_i.ten_J[:] = ten_j
+              ten_j, np.ascontiguousarray(impl.ten_J, dtype=np.float64),
+              rownnz, rowadr, colind)
+          result_i.ten_J[:] = ten_j.reshape(result_i.ten_J.shape)
+          result_i.ten_J_rownnz[:] = rownnz
+          result_i.ten_J_rowadr[:] = rowadr
+          result_i.ten_J_colind[:] = colind.reshape(result_i.ten_J_colind.shape)
+        else:
+          result_i.ten_J[:] = impl.ten_J
         continue
 
-      value = getattr(d_i, field.name)
+      value = getattr(impl, field.name) if hasattr(impl, field.name) else getattr(d_i, field.name)
 
-      if field.name in ('nefc', 'ncon'):
+      if field.name in ('ne', 'nf', 'nl'):
+        starts = {'ne': 0, 'nf': impl.ne, 'nl': impl.ne + impl.nf}
+        start = starts[field.name]
+        value = int(efc_active[start:start + value].sum())
+      elif field.name in ('nefc', 'ncon'):
         value = {'nefc': nefc, 'ncon': ncon}[field.name]
       elif field.name.endswith('xmat') or field.name == 'ximat':
         value = value.reshape((-1, 9))
       elif field.name == 'efc_J':
         value = value[efc_active]
-        if support.is_sparse(m):
+        if sparse:
           efc_J_rownnz = np.zeros(nefc, dtype=np.int32)
           efc_J_rowadr = np.zeros(nefc, dtype=np.int32)
           efc_J_colind = np.zeros(nj, dtype=np.int32)
           efc_J = np.zeros(nj)
           mujoco.mju_dense2sparse(
               efc_J,
-              value,
+              np.ascontiguousarray(value, dtype=np.float64),
               efc_J_rownnz,
               efc_J_rowadr,
               efc_J_colind,
@@ -818,6 +910,10 @@ def get_data_into(
           value = value.reshape(-1)
       elif field.name.startswith('efc_'):
         value = value[efc_active]
+      elif field.name == 'solver_niter':
+        result_i.solver_niter[:] = 0
+        result_i.solver_niter[0] = int(value)
+        continue
       if field.name == 'qM' and not support.is_sparse(m):
         value = value[dof_i, dof_j]
       elif field.name == 'qLD':
@@ -846,16 +942,11 @@ def get_data_into(
 def get_data(
     m: mujoco.MjModel,
     d: types.Data,
-) -> Union[mujoco.MjData, List[mujoco.MjData]]:
-  """Gets mjx_mlx.Data, resulting in mujoco.MjData or List[MjData]."""
-  qpos = np.array(d.qpos) if isinstance(d.qpos, mx.array) else d.qpos
-  batched = len(qpos.shape) > 1
-  batch_size = qpos.shape[0] if batched else 1
-
-  if batched:
-    result = [mujoco.MjData(m) for _ in range(batch_size)]
-  else:
-    result = mujoco.MjData(m)
+) -> mujoco.MjData:
+  """Gets a single MLX state as native MjData (no batch inference)."""
+  if len(d.qpos.shape) != 1:
+    raise NotImplementedError('Batched Data export is not supported by MLX.')
+  result = mujoco.MjData(m)
 
   get_data_into(result, m, d)
   return result
