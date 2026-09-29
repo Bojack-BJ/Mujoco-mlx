@@ -228,7 +228,7 @@ def sensor_pos(m: Model, d: Data) -> Data:
         adrs.append(adr[idxs])
       continue  # avoid adding to sensors/adrs list a second time
     elif sensor_type == SensorType.JOINTPOS:
-      sensor = d.qpos[int(m.jnt_qposadr[objid])]
+      sensor = d.qpos[mx.array(np.asarray(m.jnt_qposadr)[objid])]
     elif sensor_type == SensorType.TENDONPOS:
       sensor = d.ten_length[objid]
     elif sensor_type == SensorType.ACTUATORPOS:
@@ -394,7 +394,7 @@ def sensor_vel(m: Model, d: Data) -> Data:
       sensor = _vmap(lambda ang, rot: rot.T @ ang)(ang, rot)
       adr = (adr[:, None] + np.arange(3)[None]).reshape(-1)
     elif sensor_type == SensorType.JOINTVEL:
-      sensor = d.qvel[int(m.jnt_dofadr[objid])]
+      sensor = d.qvel[mx.array(np.asarray(m.jnt_dofadr)[objid])]
     elif sensor_type == SensorType.TENDONVEL:
       sensor = (d._impl or d).ten_velocity[objid]
     elif sensor_type == SensorType.ACTUATORVEL:
@@ -782,7 +782,7 @@ def sensor_acc(m: Model, d: Data) -> Data:
     elif sensor_type == SensorType.ACTUATORFRC:
       sensor = d.actuator_force[objid]
     elif sensor_type == SensorType.JOINTACTFRC:
-      sensor = d.qfrc_actuator[int(m.jnt_dofadr[objid])]
+      sensor = d.qfrc_actuator[mx.array(np.asarray(m.jnt_dofadr)[objid])]
     elif sensor_type == SensorType.TENDONACTFRC:
       force_mask = [
           (m.actuator_trntype == TrnType.TENDON)

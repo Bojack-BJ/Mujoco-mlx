@@ -83,7 +83,7 @@ def _spring_damper(m: Model, d: Data) -> mx.array:
 
   # tendon-level springs
   if not m.opt.disableflags & DisableBit.SPRING:
-    spring_T = mx.transpose(m.tendon_lengthspring)  # (2, ntendon)
+    spring_T = mx.transpose(mx.array(m.tendon_lengthspring))  # (2, ntendon)
     below = spring_T[0] - d.ten_length
     above = spring_T[1] - d.ten_length
     frc_spring = mx.where(below > 0, m.tendon_stiffness * below, 0)
