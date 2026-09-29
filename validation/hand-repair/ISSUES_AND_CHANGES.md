@@ -91,3 +91,12 @@ project's LEAP mesh assets and cube scene; the top-level XML hash is recorded,
 but it is not a transitive hash of included XML/meshes. Asset checksums are also
 saved separately. Probe failures return nonzero; the older local E011/E012 probe
 returned zero after recording an exception, so inspect its JSON, not exit status.
+# Subsequent E013 audit
+
+The [systematic audit](../system-audit/REPORT.md) extends this earlier ledger with
+public IO, equality/RK4/passive-force repairs, collision-group batching, strict
+mass precision validation and bounded same-state/trajectory diagnostics.
+Final full-float32 regressions: 25/25. Paired collision: 9.46× improvement.
+Both default and full-float32 50-step action traces still fail physical acceptance.
+Run physics in a fresh process with `MLX_ENABLE_TF32=0`; no native/PPO replacement
+is claimed. The entries below preserve the E012 failure chain without rewriting it.

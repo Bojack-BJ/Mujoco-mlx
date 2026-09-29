@@ -1,6 +1,26 @@
 # Experimental hand-contact repair
 
-## Latest: E012 constraint/solver repair
+## Latest: E013 systematic audit
+
+**Physics runs on M5 must launch with `MLX_ENABLE_TF32=0`.** The default reduced
+matrix precision corrupts mass matrices; a new native mass-matrix regression
+detects this (25/25 pass in full float32, 24/25 under the default). Full-float32
+paired collision improves 1.4115 → 0.1492 s (9.46×). Its 50-step trajectory still
+fails: maximum position 2.286 mm and orientation 3.694°, at 1.37 physical steps/s.
+Do not confuse fixing precision with solving all contact discrepancies. The
+measurements in the next paragraph retain the earlier default-precision pass.
+
+Supported plane/box collision groups now use `mx.vmap`: paired collision median
+1.639 → 0.1545 s (10.61×), with eight active contacts exactly matching the old
+implementation. The same historical ten-step full probe improves from 34.385 to
+11.500 s (2.99×), with elementwise-identical final state. 24 repair regressions
+and 23 original smoke functions pass after additional IO/equality/RK4/passive
+force fixes. **A 50-step action trace still fails the preset orientation gate**
+(0.02543 > 0.02 rad). This is not an accepted native/PPO replacement and has no
+cross-environment batching. See the [system audit](validation/system-audit/REPORT.md)
+for measurements, failures, reviewable commits and reproduction.
+
+## Previous: E012 constraint/solver repair
 
 Full LEAP now completes short runs, including a 10-step contact-state probe:
 34.39 s total, final cube translation error 0.042 mm and orientation error
@@ -57,7 +77,7 @@ The main project Conda environment was not modified by this change.
 Run the regression from the repository root with the isolated environment:
 
 ```sh
-python mjx/mujoco/test_collision_optimization.py
+MLX_ENABLE_TF32=0 python mjx/mujoco/test_collision_optimization.py
 ```
 
 Fetch the `repair-baseline` tag as well if using a shallow clone. Next work:

@@ -1,0 +1,102 @@
+{
+  "tests": [
+    {
+      "name": "test_math_quaternion_identity",
+      "status": "passed"
+    },
+    {
+      "name": "test_math_quaternion_inverse",
+      "status": "passed"
+    },
+    {
+      "name": "test_math_normalize",
+      "status": "passed"
+    },
+    {
+      "name": "test_math_quat_to_mat",
+      "status": "passed"
+    },
+    {
+      "name": "test_math_rotate",
+      "status": "passed"
+    },
+    {
+      "name": "test_math_axis_angle_roundtrip",
+      "status": "passed"
+    },
+    {
+      "name": "test_dataclasses_tree_map",
+      "status": "failed",
+      "error": "AttributeError(\"'NoneType' object has no attribute '__dict__'\")"
+    },
+    {
+      "name": "test_model_loading_cartpole",
+      "status": "passed"
+    },
+    {
+      "name": "test_data_loading_cartpole",
+      "status": "passed"
+    },
+    {
+      "name": "test_model_loading_pendulum",
+      "status": "passed"
+    },
+    {
+      "name": "test_model_body_properties",
+      "status": "passed"
+    },
+    {
+      "name": "test_model_joint_properties",
+      "status": "passed"
+    },
+    {
+      "name": "test_data_qvel_shape",
+      "status": "passed"
+    },
+    {
+      "name": "test_model_actuator",
+      "status": "passed"
+    },
+    {
+      "name": "test_support_import",
+      "status": "passed"
+    },
+    {
+      "name": "test_smooth_import",
+      "status": "passed"
+    },
+    {
+      "name": "test_constraint_import",
+      "status": "passed"
+    },
+    {
+      "name": "test_solver_import",
+      "status": "passed"
+    },
+    {
+      "name": "test_forward_import",
+      "status": "passed"
+    },
+    {
+      "name": "test_collision_types_import",
+      "status": "passed"
+    },
+    {
+      "name": "test_collision_primitive_import",
+      "status": "passed"
+    },
+    {
+      "name": "test_sensor_import",
+      "status": "passed"
+    },
+    {
+      "name": "test_ray_import",
+      "status": "passed"
+    }
+  ],
+  "passed": 22,
+  "failed": 1,
+  "skipped": 0,
+  "log": "Failed to import warp: No module named 'warp'\nFailed to import mujoco_warp: No module named 'warp'\n  quat_identity: PASS\n  quat_inverse: PASS\n  normalize: PASS\n  quat_to_mat: PASS\n  rotate_identity: PASS\n  axis_angle_roundtrip: PASS\n  model_loading_cartpole: PASS\n  data_loading_cartpole: PASS\n  model_loading_pendulum: PASS\n  model_body_properties: PASS\n  model_joint_properties: PASS\n  data_qvel_shape: PASS\n  model_actuator: PASS\n  support_import: PASS\n  smooth_import: PASS\n  constraint_import: PASS\n  solver_import: PASS\n  forward_import: PASS\n  collision_types_import: PASS\n  collision_primitive_import: PASS\n  sensor_import: PASS\n  ray_import: PASS\n",
+  "scope": "First harness attempt: runpy module unregistered by the time dataclass tests run; not a backend failure. Superseded by upstream-tests.json using a registered import."
+}

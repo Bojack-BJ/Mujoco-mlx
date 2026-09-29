@@ -1,0 +1,200 @@
+{
+  "status": "completed",
+  "phase": "finished",
+  "benchmark": "paired_collision_only_ablation",
+  "baseline_requested": "10c4fa4a",
+  "native_warmup_steps": 100,
+  "mlx_prepare_steps": 1,
+  "require_active_contacts": true,
+  "input_construction": "Native warmup at zero control, transfer qpos/qvel/act/ctrl/time to current MLX, run current forward.step preparation, then current fwd_position. Freeze this identical input for both variants.",
+  "repeats": 3,
+  "baseline_seconds": [
+    1.6904083749977872,
+    1.5220998340519145,
+    1.6389531249878928
+  ],
+  "current_seconds": [
+    0.15366787498351187,
+    0.17524433403741568,
+    0.15453416702803224
+  ],
+  "warmup_seconds": {
+    "baseline": 1.7490303750382736,
+    "current": 0.15569249994587153
+  },
+  "ordered_trials": [
+    {
+      "repeat": 0,
+      "order": [
+        "baseline",
+        "current"
+      ],
+      "seconds": {
+        "baseline": 1.6904083749977872,
+        "current": 0.15366787498351187
+      }
+    },
+    {
+      "repeat": 1,
+      "order": [
+        "current",
+        "baseline"
+      ],
+      "seconds": {
+        "current": 0.17524433403741568,
+        "baseline": 1.5220998340519145
+      }
+    },
+    {
+      "repeat": 2,
+      "order": [
+        "baseline",
+        "current"
+      ],
+      "seconds": {
+        "baseline": 1.6389531249878928,
+        "current": 0.15453416702803224
+      }
+    }
+  ],
+  "numerical_checks": [
+    {
+      "trial": "warmup",
+      "status": "passed",
+      "max_absolute_error": {
+        "dist": 0.0,
+        "pos": 0.0,
+        "frame": 0.0
+      },
+      "slots": 7016,
+      "active_contacts": 8,
+      "dim_and_address_equal": true,
+      "activation_equal": true
+    },
+    {
+      "trial": 0,
+      "status": "passed",
+      "max_absolute_error": {
+        "dist": 0.0,
+        "pos": 0.0,
+        "frame": 0.0
+      },
+      "slots": 7016,
+      "active_contacts": 8,
+      "dim_and_address_equal": true,
+      "activation_equal": true
+    },
+    {
+      "trial": 1,
+      "status": "passed",
+      "max_absolute_error": {
+        "dist": 0.0,
+        "pos": 0.0,
+        "frame": 0.0
+      },
+      "slots": 7016,
+      "active_contacts": 8,
+      "dim_and_address_equal": true,
+      "activation_equal": true
+    },
+    {
+      "trial": 2,
+      "status": "passed",
+      "max_absolute_error": {
+        "dist": 0.0,
+        "pos": 0.0,
+        "frame": 0.0
+      },
+      "slots": 7016,
+      "active_contacts": 8,
+      "dim_and_address_equal": true,
+      "activation_equal": true
+    }
+  ],
+  "scope": "Only baseline collision_convex and collision_driver are historical. All other dependencies are shared current code. Both variants run in one process on one frozen input state.",
+  "tolerance": {
+    "absolute": 2e-05,
+    "relative": 0
+  },
+  "timeout_seconds": 120.0,
+  "python": "3.11.16",
+  "executable": "$MLX_ENV/bin/python",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "mujoco": "3.5.0",
+  "mlx": "0.32.2",
+  "device": "Device(gpu, 0)",
+  "baseline_revision": "10c4fa4a7653c4efc7891c8083809b6fae35eca3",
+  "current_revision": "9ac02b5056df4dccdf77411b05b16d83105f4bc2",
+  "dirty": true,
+  "xml": "$PROJECT/experiments/models/leap_hand/cube_scene.xml",
+  "xml_sha256": "112d25e944c5b781756b0faded8b3237db1e130c080bec0b050ef9d4a38c948f",
+  "hash_limitation": "XML hash excludes referenced assets and includes",
+  "source_sha256": {
+    "baseline": {
+      "collision_convex": "eafc0822912ef7fe54ac0c9e1e29ce41878a94c18e9261a4075c44f75992c975",
+      "collision_driver": "bb959111bead6723cfdf8650de995872ae064b157a6fe073899bd760da07e7bb"
+    },
+    "current": {
+      "collision_convex": "6a089784871c6ab22f95cb2eb0fc0992f799a15d54fa5ee3d03d5628b17e2afd",
+      "collision_driver": "51534dc8ac4bb785f28e840713f8aa8cc71069c965a5e51464ef21149ef3b359",
+      "mesh": "2c666e27e8a3e2dcd3c9407bfb93a9e9d47c5c52bfa0b55d0797ede4de8b87b3",
+      "math": "857976a99d27aa971419a94d29bba3dde8f7434654de7c8b4fa988192480c003",
+      "io": "c0d61e2567cdc64f452b5a44210af9c30272b6884c5a1fe66d4a0a95d5a52742",
+      "forward": "811bb788db689fe3a1261bc36ccf886b9045b25a79bdcd14e044a3d1f85cda56"
+    }
+  },
+  "rebound_convex_exports": [
+    "box_box",
+    "capsule_convex",
+    "convex_convex",
+    "hfield_capsule",
+    "hfield_convex",
+    "hfield_sphere",
+    "plane_convex",
+    "sphere_convex"
+  ],
+  "setup_seconds": 1.529985166969709,
+  "frozen_state_sha256": "f68098ce9936cd1064708f9b8059e12355b6a4d993cf1c7498a2e8b4b5f01e77",
+  "qpos": [
+    -0.02551139146089554,
+    -3.2272375847242074e-06,
+    -0.006813574582338333,
+    -0.0014175765682011843,
+    -0.030928732827305794,
+    6.803348514949903e-05,
+    -0.00606164475902915,
+    -0.0008517130045220256,
+    -0.025510836392641068,
+    -3.227238494218909e-06,
+    -0.006813048850744963,
+    -0.0014175717951729894,
+    -0.022230038419365883,
+    0.00041047591366805136,
+    3.7516736028919695e-06,
+    1.798545213205216e-06,
+    0.04127997159957886,
+    0.03499735891819,
+    0.15555381774902344,
+    0.9934318661689758,
+    -0.00012051963858539239,
+    0.11442531645298004,
+    0.00017496543296147138
+  ],
+  "initial_native_contact_count": 2,
+  "frozen_current_active_contacts": 8,
+  "model_dimensions": {
+    "nq": 23,
+    "nv": 22,
+    "ngeom": 90
+  },
+  "contact_slots": 7016,
+  "input_state_unchanged": true,
+  "baseline_median_seconds": 1.6389531249878928,
+  "current_median_seconds": 0.15453416702803224,
+  "median_speedup": 10.605765420734363,
+  "inactive_slot_policy": "Preserve slots and activation; inactive sentinel distances, positions and frames need not match",
+  "worker_wall_seconds": 10.330265459022485,
+  "worker_returncode": 0,
+  "supervisor_wall_seconds": 10.502184459008276,
+  "worker_stdout_tail": "Failed to import warp: No module named 'warp'\nFailed to import mujoco_warp: No module named 'warp'\n"
+}

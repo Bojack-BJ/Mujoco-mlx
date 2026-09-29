@@ -2,6 +2,32 @@
 
 Not submitted. Intended upstream: RobotFlow-Labs/Mujoco-mlx.
 
+## E013 addendum (latest evidence)
+
+Late precision finding: on M5, default float32 matrix operations produce a
+mass-matrix error of 4.39e-5 for this model. The documented process setting
+`MLX_ENABLE_TF32=0` reduces it to 1.79e-9. A new strict native-mass regression
+makes the count 25/25 in full float32; the default now correctly fails 1/25.
+Full-float32 paired collision gives 9.46× improvement, but its 50-step trajectory
+still exceeds the unchanged position/orientation gates (2.286 mm / 3.694°).
+The older default-precision numbers below are retained as separate evidence.
+
+The [system audit](../system-audit/REPORT.md) adds empty-elliptic, equality, RK4,
+passive-force and native IO repairs, including constraint object identity across
+inactive rows. Supported plane/box collision groups use real MLX vmap; topology
+conversion precedes traced sizes. Three alternating-order paired comparisons
+show 10.61× collision-only improvement and exact equality of eight active
+contacts. Same historical ten-step full probe: 34.385 → 11.500 s, identical final
+qpos. There are now 24 repair regression methods and 23 upstream smoke functions
+passing. These counts do not imply broad physical equivalence.
+
+Crucially, a 50-step/two-action LEAP comparison runs but fails a predeclared
+orientation tolerance: 0.02543 rad maximum versus 0.02 rad allowed. Keep that
+failure visible. No cross-environment batch, PPO integration, or native-backend
+replacement is claimed. Source changes are separately committed as collision
+performance (`6691e627`), physics correctness (`f9dd2646`), and native IO
+(`9ac02b50`). The sections below retain the earlier E012 checkpoint evidence.
+
 ## Problem
 
 The MLX port handles simple examples but complex hand scenes fail before one

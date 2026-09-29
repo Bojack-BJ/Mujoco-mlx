@@ -1,0 +1,258 @@
+{
+  "steps_requested": 10,
+  "steps_completed": 10,
+  "events": [
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 0.24209254200104624
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.013873207964934409,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.23620754200965166
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 0.24222816596738994
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.014306792058050632,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 8
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.8244286669651046
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 0.2429395830258727
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.014860208029858768,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 8
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.28715558303520083
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 0.23670649994164705
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.011801875079981983,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.41147683397866786
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 0.24745729204732925
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.010923875030130148,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 4
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.7896464579971507
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 0.2148909579264
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.011282082996331155,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 4
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 1.0482894158922136
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 0.2466061250306666
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.009957208065316081,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 4
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.5211032080696896
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 0.2523092089686543
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.00983820902183652,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 4
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 1.0430274580139667
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 0.23454666696488857
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.011513834004290402,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 4
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.5500903340289369
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 0.22876620898023248
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.008958959020674229,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 4
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.5723167919786647
+    }
+  ],
+  "python": "3.11.16",
+  "mujoco": "3.5.0",
+  "mlx": "0.32.2",
+  "device": "Device(gpu, 0)",
+  "revision": "10c4fa4a7653c4efc7891c8083809b6fae35eca3",
+  "dirty": true,
+  "model": "cube_scene.xml",
+  "xml_sha256": "112d25e944c5b781756b0faded8b3237db1e130c080bec0b050ef9d4a38c948f",
+  "native_warmup_steps": 100,
+  "status": "completed",
+  "max_qpos_error_mixed_units": 0.001264161489856086,
+  "qpos_mlx": [
+    -0.025529753416776657,
+    -3.2785878829599824e-06,
+    -0.006811731960624456,
+    -0.0014113161014392972,
+    -0.032625120133161545,
+    6.243774987524375e-05,
+    -0.005790797062218189,
+    -0.0007914306479506195,
+    -0.025529207661747932,
+    -3.278797521488741e-06,
+    -0.00681121414527297,
+    -0.0014113071374595165,
+    -0.022247008979320526,
+    0.0004097521596122533,
+    3.675274683700991e-06,
+    1.8492415847504162e-06,
+    0.04004852473735809,
+    0.03501226007938385,
+    0.15485702455043793,
+    0.995612621307373,
+    9.176575258607045e-05,
+    0.09357083588838577,
+    -0.00011540448031155393
+  ],
+  "qpos_native": [
+    -0.02552925643364223,
+    -3.2788495989192946e-06,
+    -0.006812170929554006,
+    -0.0014112915151433616,
+    -0.03259774854714376,
+    -1.1448007726145647e-05,
+    -0.005834148256448809,
+    -0.0008024686351825392,
+    -0.02552870820677221,
+    -3.278836331370658e-06,
+    -0.006811646595165831,
+    -0.0014112917592484762,
+    -0.022247015931212432,
+    0.0004097516767801322,
+    3.675231272766958e-06,
+    1.8492488373696024e-06,
+    0.04001604775896347,
+    0.03500247056142266,
+    0.1548322281579494,
+    0.9957306218501595,
+    2.5151514985044457e-05,
+    0.09230667439852969,
+    -7.70634696225473e-05
+  ],
+  "elapsed_s": 11.500029874965549
+}
