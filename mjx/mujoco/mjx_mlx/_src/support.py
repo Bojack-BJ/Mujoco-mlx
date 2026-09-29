@@ -272,6 +272,31 @@ def jac(
   return jacp, jacr
 
 
+def jac_batch(m: Model, d: Data, points: mx.array, body_ids: np.ndarray):
+  """Point Jacobians with shape (points, nv, 3), without scalar MLX loops."""
+  # Model topology is static. Construct ancestor masks once per body, then
+  # gather by contact body; do not build a separate GPU graph for each DOF.
+  ancestors = np.zeros((m.nbody, m.nbody), dtype=np.float32)
+  parents = np.asarray(m.body_parentid)
+  for body in range(m.nbody):
+    cursor = body
+    while True:
+      ancestors[body, cursor] = 1.
+      if cursor == 0:
+        break
+      cursor = int(parents[cursor])
+  mask = mx.array(ancestors[body_ids][:, np.asarray(m.dof_bodyid)])
+  roots = mx.array(np.asarray(m.body_rootid)[body_ids])
+  offset = points - d.subtree_com[roots]
+  angular = d.cdof[None, :, :3]
+  off = offset[:, None, :]
+  cross = mx.stack([angular[..., 1] * off[..., 2] - angular[..., 2] * off[..., 1],
+                    angular[..., 2] * off[..., 0] - angular[..., 0] * off[..., 2],
+                    angular[..., 0] * off[..., 1] - angular[..., 1] * off[..., 0]], axis=-1)
+  return ((d.cdof[None, :, 3:] + cross) * mask[..., None],
+          angular * mask[..., None])
+
+
 def jac_dot(
     m: Model, d: Data, point: mx.array, body_id
 ) -> Tuple[mx.array, mx.array]:

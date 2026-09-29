@@ -456,7 +456,9 @@ def _concat_contacts(contacts):
     elif isinstance(vals[0], mx.array):
       kwargs[f.name] = mx.concatenate(vals)
     elif isinstance(vals[0], np.ndarray):
-      kwargs[f.name] = np.concatenate(vals)
+      # NumPy leaves (dim and efc_address) are global static metadata, shared
+      # by every collision group, not per-group contact arrays.
+      kwargs[f.name] = vals[0]
     else:
       kwargs[f.name] = vals[0]  # scalar / non-array
   return type(contacts[0])(**kwargs)

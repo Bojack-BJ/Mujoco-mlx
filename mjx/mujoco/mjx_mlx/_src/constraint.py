@@ -83,16 +83,16 @@ def _kbi(
   if solimp.ndim == 0:
     solimp = mx.reshape(solimp, (1,))
   # Pad if too short
-  if solref.shape[0] < 2:
-    solref = mx.concatenate([solref, mx.zeros(2 - solref.shape[0])])
-  if solimp.shape[0] < 5:
-    solimp = mx.concatenate([solimp, mx.zeros(5 - solimp.shape[0])])
-  timeconst, dampratio = solref[0], solref[1]
+  if solref.shape[-1] < 2:
+    solref = mx.pad(solref, [(0, 0)] * (solref.ndim - 1) + [(0, 2 - solref.shape[-1])])
+  if solimp.shape[-1] < 5:
+    solimp = mx.pad(solimp, [(0, 0)] * (solimp.ndim - 1) + [(0, 5 - solimp.shape[-1])])
+  timeconst, dampratio = solref[..., 0], solref[..., 1]
 
   if not m.opt.disableflags & DisableBit.REFSAFE:
     timeconst = mx.maximum(timeconst, 2 * m.opt.timestep)
 
-  dmin, dmax, width, mid, power = solimp[0], solimp[1], solimp[2], solimp[3], solimp[4]
+  dmin, dmax, width, mid, power = solimp[..., 0], solimp[..., 1], solimp[..., 2], solimp[..., 3], solimp[..., 4]
 
   dmin = mx.clip(dmin, mujoco.mjMINIMP, mujoco.mjMAXIMP)
   dmax = mx.clip(dmax, mujoco.mjMINIMP, mujoco.mjMAXIMP)
@@ -103,8 +103,8 @@ def _kbi(
   # See https://mujoco.readthedocs.io/en/latest/modeling.html#solver-parameters
   k = 1 / (dmax * dmax * timeconst * timeconst * dampratio * dampratio)
   b = 2 / (dmax * timeconst)
-  k = mx.where(solref[0] <= 0, -solref[0] / (dmax * dmax), k)
-  b = mx.where(solref[1] <= 0, -solref[1] / dmax, b)
+  k = mx.where(solref[..., 0] <= 0, -solref[..., 0] / (dmax * dmax), k)
+  b = mx.where(solref[..., 1] <= 0, -solref[..., 1] / dmax, b)
 
   imp_x = mx.abs(pos) / width
   imp_a = (1.0 / mx.power(mid, power - 1)) * mx.power(imp_x, power)
@@ -119,10 +119,11 @@ def _kbi(
 
 def _row(j: mx.array, *args) -> _Efc:
   """Creates an efc row, ensuring args all have same row count."""
+  j = mx.array(j)
+  args = [mx.array(arg) for arg in args]
   if len(j.shape) < 2:
     return _Efc(j, *args)  # if j isn't batched, ignore
 
-  args = [mx.array(arg) for arg in args]
   args = [mx.tile(arg, (j.shape[0],) + (1,) * len(arg.shape))
           if not arg.shape or arg.shape[0] != j.shape[0] else arg
           for arg in args]
@@ -564,207 +565,77 @@ def _efc_limit_tendon(m: Model, d: Data) -> Optional[_Efc]:
   return _tree_map(lambda *xs: mx.stack(xs, axis=0), *results)
 
 
-def _efc_contact_frictionless(m: Model, d: Data) -> Optional[_Efc]:
-  """Calculates constraint rows for frictionless contacts."""
-  if False:  # MLX port: single backend, no impl check
-    pass  # MLX port: backend check removed
-
-  con_id = np.nonzero((d._impl or d).contact.dim == 1)[0]
-
-  if con_id.size == 0:
-    return None
-
-  def _single_row(c_dist, c_includemargin, c_geom, c_pos, c_frame, c_solref, c_solimp):
-    # Ensure all contact fields are mx.array (they may arrive as numpy)
-    c_dist = mx.array(c_dist) if not isinstance(c_dist, mx.array) else c_dist
-    c_includemargin = mx.array(c_includemargin) if not isinstance(c_includemargin, mx.array) else c_includemargin
-    c_geom = mx.array(c_geom) if not isinstance(c_geom, mx.array) else c_geom
-    c_pos = mx.array(c_pos) if not isinstance(c_pos, mx.array) else c_pos
-    c_frame = mx.array(c_frame) if not isinstance(c_frame, mx.array) else c_frame
-    c_solref = mx.array(c_solref) if not isinstance(c_solref, mx.array) else c_solref
-    c_solimp = mx.array(c_solimp) if not isinstance(c_solimp, mx.array) else c_solimp
-
-    pos = c_dist - c_includemargin
-    active = pos < 0
-    body1 = mx.array(m.geom_bodyid)[int(c_geom[0].item())]
-    body2 = mx.array(m.geom_bodyid)[int(c_geom[1].item())]
-    jac1p, _ = support.jac(m, d, c_pos, int(body1.item()))
-    jac2p, _ = support.jac(m, d, c_pos, int(body2.item()))
-    frame_3x3 = mx.reshape(c_frame, (3, 3))
-    j = (frame_3x3 @ (jac2p - jac1p).T)[0]
-    invweight = m.body_invweight0[int(body1.item()), 0] + m.body_invweight0[int(body2.item()), 0]
-
-    return _row(
-        j * active,
-        pos * active,
-        pos,
-        invweight,
-        c_solref,
-        c_solimp,
-        c_includemargin,
-        mx.zeros_like(pos),
-    )
-
+def _efc_contact_batch(m: Model, d: Data, condim: int,
+                       elliptic: bool = False) -> Optional[_Efc]:
+  """Assemble a whole contact dimension group, preserving every row/slot."""
   contact = (d._impl or d).contact
-  results = [
-      _single_row(
-          contact.dist[int(i)], contact.includemargin[int(i)], contact.geom[int(i)],
-          contact.pos[int(i)], contact.frame[int(i)], contact.solref[int(i)], contact.solimp[int(i)],
-      )
-      for i in con_id
-  ]
-  if not results:
+  con_id = np.nonzero(contact.dim == condim)[0]
+  if not con_id.size:
     return None
-  return _tree_map(lambda *xs: mx.stack(xs, axis=0), *results)
+  ids = mx.array(con_id)
+  def field(name):
+    return mx.array(getattr(contact, name))[ids]
+  geom = np.asarray(contact.geom)[con_id]
+  bodies = np.asarray(m.geom_bodyid)[geom]
+  point = field('pos')
+  jac1p, jac1r = support.jac_batch(m, d, point, bodies[:, 0])
+  jac2p, jac2r = support.jac_batch(m, d, point, bodies[:, 1])
+  frame = field('frame').reshape((-1, 3, 3))
+  diff = frame @ mx.transpose(jac2p - jac1p, (0, 2, 1))
+  if condim > 3:
+    rotational = frame @ mx.transpose(jac2r - jac1r, (0, 2, 1))
+    diff = mx.concatenate([diff, rotational[:, :condim - 3]], axis=1)
+  pos = field('dist') - field('includemargin')
+  active = pos < 0
+  body1, body2 = mx.array(bodies[:, 0]), mx.array(bodies[:, 1])
+  iw = mx.array(m.body_invweight0)[body1, 0] + mx.array(m.body_invweight0)[body2, 0]
+  solref, solimp = field('solref'), field('solimp')
+  margin = field('includemargin')
+  if condim == 1:
+    return _Efc(diff[:, 0] * active[:, None], pos * active, pos, iw,
+                solref, solimp, margin, mx.zeros_like(pos))
+
+  friction = field('friction')
+  if elliptic:
+    rows = condim
+    j = diff
+    sr_fri = field('solreffriction')
+    sr_fri = mx.where(mx.any(sr_fri != 0, axis=1)[:, None], sr_fri, solref)
+    solref = mx.concatenate([solref[:, None, :],
+        mx.broadcast_to(sr_fri[:, None, :], (len(con_id), rows - 1, 2))], axis=1)
+    ratio = friction[:, :1] ** 2 / friction[:, 1:condim - 1] ** 2
+    iw = mx.concatenate([iw[:, None], (iw / m.opt.impratio)[:, None],
+                         (iw / m.opt.impratio)[:, None] * ratio], axis=1)
+    pos_aref = pos[:, None] * (mx.arange(rows) == 0)[None, :]
+  else:
+    rows = 2 * (condim - 1)
+    fri = mx.repeat(friction[:, :condim - 1], 2, axis=1)
+    fri = fri * mx.where(mx.arange(rows) % 2 == 0, 1., -1.)
+    j = diff[:, :1] + mx.repeat(diff[:, 1:condim], 2, axis=1) * fri[:, :, None]
+    iw = iw * (1 + fri[:, 0] ** 2) * 2 * fri[:, 0] ** 2 / m.opt.impratio
+    iw = mx.broadcast_to(iw[:, None], (len(con_id), rows))
+    solref = mx.broadcast_to(solref[:, None, :], (len(con_id), rows, 2))
+    pos_aref = mx.broadcast_to(pos[:, None], (len(con_id), rows))
+
+  def repeat(value):
+    return mx.repeat(value, rows, axis=0)
+  return _Efc(
+      (j * active[:, None, None]).reshape((-1, m.nv)),
+      (pos_aref * active[:, None]).reshape(-1), repeat(pos), iw.reshape(-1),
+      solref.reshape((-1, 2)), repeat(solimp), repeat(margin),
+      mx.zeros((len(con_id) * rows,)))
+
+
+def _efc_contact_frictionless(m: Model, d: Data) -> Optional[_Efc]:
+  return _efc_contact_batch(m, d, 1)
 
 
 def _efc_contact_pyramidal(m: Model, d: Data, condim: int) -> Optional[_Efc]:
-  """Calculates constraint rows for frictional pyramidal contacts."""
-  if (
-      False  # MLX port: single backend
-      or not isinstance(m.opt._impl, OptionMLX)
-  ):
-    pass  # MLX port: backend check removed
-
-  con_id = np.nonzero((d._impl or d).contact.dim == condim)[0]
-
-  if con_id.size == 0:
-    return None
-
-  def _single_row(c_dist, c_includemargin, c_geom, c_pos, c_frame, c_friction, c_solref, c_solimp):
-    # Ensure all contact fields are mx.array (they may arrive as numpy)
-    c_dist = mx.array(c_dist) if not isinstance(c_dist, mx.array) else c_dist
-    c_includemargin = mx.array(c_includemargin) if not isinstance(c_includemargin, mx.array) else c_includemargin
-    c_geom = mx.array(c_geom) if not isinstance(c_geom, mx.array) else c_geom
-    c_pos = mx.array(c_pos) if not isinstance(c_pos, mx.array) else c_pos
-    c_frame = mx.array(c_frame) if not isinstance(c_frame, mx.array) else c_frame
-    c_friction = mx.array(c_friction) if not isinstance(c_friction, mx.array) else c_friction
-    c_solref = mx.array(c_solref) if not isinstance(c_solref, mx.array) else c_solref
-    c_solimp = mx.array(c_solimp) if not isinstance(c_solimp, mx.array) else c_solimp
-
-    pos = c_dist - c_includemargin
-    active = pos < 0
-    body1 = int(np.array(m.geom_bodyid)[int(c_geom[0].item())])
-    body2 = int(np.array(m.geom_bodyid)[int(c_geom[1].item())])
-    jac1p, jac1r = support.jac(m, d, c_pos, body1)
-    jac2p, jac2r = support.jac(m, d, c_pos, body2)
-    frame_3x3 = mx.reshape(c_frame, (3, 3))
-    diff = frame_3x3 @ (jac2p - jac1p).T
-    if condim > 3:
-      diff = mx.concatenate([diff, (frame_3x3 @ (jac2r - jac1r).T)], axis=0)
-    # a pair of opposing pyramid edges per friction dimension
-    fri = mx.repeat(c_friction[: condim - 1], 2, axis=0)
-    # Negate odd indices
-    signs = mx.ones(fri.shape)
-    for idx in range(1, fri.shape[0], 2):
-      signs = _set_at(signs, idx, mx.array(-1.0))
-    fri = fri * signs
-    # repeat condims of jacdiff to match +/- friction directions
-    j = diff[0] + mx.repeat(diff[1:condim], 2, axis=0) * fri[:, None]
-
-    # pyramidal has common invweight across all edges
-    invweight = m.body_invweight0[body1, 0] + m.body_invweight0[body2, 0]
-    invweight = invweight + fri[0] * fri[0] * invweight
-    invweight = invweight * 2 * fri[0] * fri[0] / m.opt.impratio
-
-    return _row(
-        j * active,
-        pos * active,
-        pos,
-        invweight,
-        c_solref,
-        c_solimp,
-        c_includemargin,
-        mx.zeros_like(pos),
-    )
-
-  contact = (d._impl or d).contact
-  results = [
-      _single_row(
-          contact.dist[int(i)], contact.includemargin[int(i)], contact.geom[int(i)],
-          contact.pos[int(i)], contact.frame[int(i)], contact.friction[int(i)],
-          contact.solref[int(i)], contact.solimp[int(i)],
-      )
-      for i in con_id
-  ]
-  if not results:
-    return None
-  # concatenate to drop row grouping
-  return _tree_map(lambda *xs: mx.concatenate(xs, axis=0), *results)
+  return _efc_contact_batch(m, d, condim)
 
 
 def _efc_contact_elliptic(m: Model, d: Data, condim: int) -> Optional[_Efc]:
-  """Calculates constraint rows for frictional elliptic contacts."""
-  if (
-      False  # MLX port: single backend
-      or not isinstance(m.opt._impl, OptionMLX)
-  ):
-    pass  # MLX port: backend check removed
-
-  con_id = np.nonzero((d._impl or d).contact.dim == condim)[0]
-
-  if con_id.size == 0:
-    return None
-
-  def _single_row(c_dist, c_includemargin, c_geom, c_pos, c_frame, c_friction,
-                   c_solref, c_solreffriction, c_solimp):
-    # Ensure all contact fields are mx.array (they may arrive as numpy)
-    c_dist = mx.array(c_dist) if not isinstance(c_dist, mx.array) else c_dist
-    c_includemargin = mx.array(c_includemargin) if not isinstance(c_includemargin, mx.array) else c_includemargin
-    c_geom = mx.array(c_geom) if not isinstance(c_geom, mx.array) else c_geom
-    c_pos = mx.array(c_pos) if not isinstance(c_pos, mx.array) else c_pos
-    c_frame = mx.array(c_frame) if not isinstance(c_frame, mx.array) else c_frame
-    c_friction = mx.array(c_friction) if not isinstance(c_friction, mx.array) else c_friction
-    c_solref = mx.array(c_solref) if not isinstance(c_solref, mx.array) else c_solref
-    c_solreffriction = mx.array(c_solreffriction) if not isinstance(c_solreffriction, mx.array) else c_solreffriction
-    c_solimp = mx.array(c_solimp) if not isinstance(c_solimp, mx.array) else c_solimp
-
-    pos = c_dist - c_includemargin
-    active = pos < 0
-    obj1id = mx.array(m.geom_bodyid)[int(c_geom[0].item())]
-    obj2id = mx.array(m.geom_bodyid)[int(c_geom[1].item())]
-    jac1p, jac1r = support.jac(m, d, c_pos, int(obj1id.item()))
-    jac2p, jac2r = support.jac(m, d, c_pos, int(obj2id.item()))
-    frame_3x3 = mx.reshape(c_frame, (3, 3))
-    j = frame_3x3 @ (jac2p - jac1p).T
-    if condim > 3:
-      j = mx.concatenate([j, (frame_3x3 @ (jac2r - jac1r).T)[: condim - 3]])
-    invweight = m.body_invweight0[int(obj1id.item()), 0] + m.body_invweight0[int(obj2id.item()), 0]
-
-    # normal row comes from solref, remaining rows from solreffriction
-    solreffriction = c_solreffriction + c_solref * (~mx.any(c_solreffriction != 0))
-    solreffriction = mx.tile(solreffriction[None, :], (condim - 1, 1))
-    solref_full = mx.concatenate([c_solref[None, :], solreffriction])
-    fri = mx.square(c_friction[0]) / mx.square(c_friction[1 : condim - 1])
-    invweight_arr = mx.array([invweight, invweight / m.opt.impratio])
-    invweight_arr = mx.concatenate([invweight_arr, invweight_arr[1] * fri])
-    pos_aref = mx.zeros(condim)
-    pos_aref = _set_at(pos_aref, 0, pos)
-
-    return _row(
-        j * active,
-        pos_aref * active,
-        pos,
-        invweight_arr,
-        solref_full,
-        c_solimp,
-        c_includemargin,
-        mx.zeros_like(pos),
-    )
-
-  contact = (d._impl or d).contact
-  results = [
-      _single_row(
-          contact.dist[int(i)], contact.includemargin[int(i)], contact.geom[int(i)],
-          contact.pos[int(i)], contact.frame[int(i)], contact.friction[int(i)],
-          contact.solref[int(i)], contact.solreffriction[int(i)], contact.solimp[int(i)],
-      )
-      for i in con_id
-  ]
-  if not results:
-    return None
-  # concatenate to drop row grouping
-  return _tree_map(lambda *xs: mx.concatenate(xs, axis=0), *results)
+  return _efc_contact_batch(m, d, condim, elliptic=True)
 
 
 def counts(efc_type: np.ndarray) -> Tuple[int, int, int, int]:
@@ -894,33 +765,12 @@ def make_constraint(m: Model, d: Data) -> Data:
 
   efc = _tree_map(lambda *x: mx.concatenate(x, axis=0), *efcs)
 
-  # vmap fn -> explicit loop
-  def _fn_single(efc_J, efc_pos_aref, efc_pos_imp, efc_invweight, efc_solref,
-                  efc_solimp, efc_margin, efc_frictionloss):
-    k, b, imp = _kbi(m, efc_solref, efc_solimp, efc_pos_imp)
-    r = mx.maximum(efc_invweight * (1 - imp) / imp, mx.array(mujoco.mjMINVAL))
-    qvel = mx.array(d.qvel) if not isinstance(d.qvel, mx.array) else d.qvel
-    aref = -b * (efc_J @ qvel) - k * imp * efc_pos_aref
-    return aref, r, efc_pos_aref + efc_margin, efc_margin, efc_frictionloss
-
-  n_efc = efc.J.shape[0]
-  arefs, rs, poss, margins, flosses = [], [], [], [], []
-  for i in range(n_efc):
-    a, r, p, mg, fl = _fn_single(
-        efc.J[i], efc.pos_aref[i], efc.pos_imp[i], efc.invweight[i],
-        efc.solref[i], efc.solimp[i], efc.margin[i], efc.frictionloss[i],
-    )
-    arefs.append(a)
-    rs.append(r)
-    poss.append(p)
-    margins.append(mg)
-    flosses.append(fl)
-
-  aref = mx.stack(arefs)
-  r = mx.stack(rs)
-  pos = mx.stack(poss)
-  margin = mx.stack(margins)
-  frictionloss = mx.stack(flosses)
+  # _kbi broadcasts over the leading constraint-row axis.
+  k, b, imp = _kbi(m, efc.solref, efc.solimp, efc.pos_imp)
+  r = mx.maximum(efc.invweight * (1 - imp) / imp, mx.array(mujoco.mjMINVAL))
+  aref = -b * (efc.J @ mx.array(d.qvel)) - k * imp * efc.pos_aref
+  pos = efc.pos_aref + efc.margin
+  margin, frictionloss = efc.margin, efc.frictionloss
 
   d = d.tree_replace({
       '_impl.efc_J': efc.J,
