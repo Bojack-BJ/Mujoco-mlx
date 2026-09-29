@@ -16,6 +16,28 @@ exec(subprocess.check_output(['git','show','91a7da2d:mjx/mujoco/mjx_mlx/_src/sol
 
 
 class SolverRegression(unittest.TestCase):
+    def test_mixed_dimensions_with_limit_and_friction_rows(self):
+        xml = '<mujoco><compiler angle="radian"/><option cone="elliptic"/><worldbody><geom type="plane" size="2 2 .1" condim="1"/>'
+        for i,dim in enumerate((3,4,6)):
+            xml += f'<body pos="{i*.3} 0 .019"><freejoint/><geom type="box" size=".02 .02 .02" condim="{dim}"/></body>'
+        xml += '<body pos="-1 0 .2"><joint range="-.1 .1" frictionloss=".02"/><geom size=".02"/></body></worldbody></mujoco>'
+        m = mujoco.MjModel.from_xml_string(xml)
+        x,d = io.put_model(m),io.make_data(m)
+        qpos = np.asarray(d.qpos).copy()
+        qpos[-1] = .2
+        d = d.replace(qpos=mx.array(qpos),qvel=mx.array(np.linspace(-.1,.2,m.nv)))
+        for fn in (forward.fwd_position,forward.fwd_velocity,forward.fwd_actuation,forward.fwd_acceleration):
+            d = fn(x,d)
+        self.assertEqual(set((d._impl or d).contact.dim),{3,4,6})
+        self.assertGreater((d._impl or d).nl,0)
+        self.assertGreater((d._impl or d).nf,0)
+        d = d.replace(qacc=d.qacc_smooth)
+        a,e = solver.Context.create(x,d),old.Context.create(x,d)
+        for field in ('cost','efc_force','active','h','Mgrad'):
+            np.testing.assert_allclose(np.asarray(getattr(a,field)),np.asarray(getattr(e,field)),rtol=3e-4,atol=3e-4,err_msg=field)
+        a,e = solver._linesearch(x,d,a),old._linesearch(x,d,e)
+        np.testing.assert_allclose(np.asarray(a.qacc),np.asarray(e.qacc),rtol=5e-4,atol=5e-4)
+
     def test_cone_blocks_gradient_linesearch_and_solve(self):
         for dim in (3,4,6):
             for kind in (SolverType.CG, SolverType.NEWTON):

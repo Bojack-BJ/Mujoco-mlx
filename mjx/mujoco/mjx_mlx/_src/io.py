@@ -423,7 +423,8 @@ def make_data(
   filtered_data = {k: v for k, v in all_data_fields.items() if k in data_field_names}
 
   # Create DataMLX _impl with internal state arrays
-  impl_fields = {}
+  impl_fields = dict(ne=ne, nf=nf, nl=nl, nefc=nefc, ncon=ncon,
+                     contact=contact, efc_type=efc_type)
   for k, v in zero_impl_fields.items():
     if isinstance(v, np.ndarray):
       impl_fields[k] = v
