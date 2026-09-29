@@ -122,14 +122,10 @@ def _row(j: mx.array, *args) -> _Efc:
   if len(j.shape) < 2:
     return _Efc(j, *args)  # if j isn't batched, ignore
 
-  args = list(args)
-  for i, arg in enumerate(args):
-    # Ensure arg is mx.array before tiling
-    if not isinstance(arg, mx.array):
-      arg = mx.array(arg) if hasattr(arg, '__len__') or hasattr(arg, 'shape') else mx.array([arg])
-      args[i] = arg
-    if not arg.shape or arg.shape[0] != j.shape[0]:
-      args[i] = mx.tile(arg, (j.shape[0],) + (1,) * max(0, len(arg.shape) - 1))
+  args = [mx.array(arg) for arg in args]
+  args = [mx.tile(arg, (j.shape[0],) + (1,) * len(arg.shape))
+          if not arg.shape or arg.shape[0] != j.shape[0] else arg
+          for arg in args]
   return _Efc(j, *args)
 
 
@@ -403,18 +399,20 @@ def _efc_friction(m: Model, d: Data) -> Optional[_Efc]:
 
   # Build dof args
   eye_nv = mx.eye(m.nv)
-  j_dof = eye_nv[dof_id]
-  fl_dof = m.dof_frictionloss[dof_id]
-  iw_dof = m.dof_invweight0[dof_id]
-  sr_dof = m.dof_solref[dof_id]
-  si_dof = m.dof_solimp[dof_id]
+  mlx_dof_id = mx.array(dof_id)
+  j_dof = eye_nv[mlx_dof_id]
+  fl_dof = m.dof_frictionloss[mlx_dof_id]
+  iw_dof = m.dof_invweight0[mlx_dof_id]
+  sr_dof = m.dof_solref[mlx_dof_id]
+  si_dof = m.dof_solimp[mlx_dof_id]
 
   # Build tendon args
-  j_ten = (d._impl or d).ten_J[tendon_id]
-  fl_ten = m.tendon_frictionloss[tendon_id]
-  iw_ten = m.tendon_invweight0[tendon_id]
-  sr_ten = m.tendon_solref_fri[tendon_id]
-  si_ten = m.tendon_solimp_fri[tendon_id]
+  mlx_tendon_id = mx.array(tendon_id)
+  j_ten = (d._impl or d).ten_J[mlx_tendon_id]
+  fl_ten = m.tendon_frictionloss[mlx_tendon_id]
+  iw_ten = m.tendon_invweight0[mlx_tendon_id]
+  sr_ten = m.tendon_solref_fri[mlx_tendon_id]
+  si_ten = m.tendon_solimp_fri[mlx_tendon_id]
 
   # Concatenate dof and tendon args
   if dof_id.size > 0 and tendon_id.size > 0:
@@ -429,8 +427,10 @@ def _efc_friction(m: Model, d: Data) -> Optional[_Efc]:
     j_all, fl_all, iw_all, sr_all, si_all = j_ten, fl_ten, iw_ten, sr_ten, si_ten
 
   def _single_row(j, frictionloss, invweight, solref, solimp):
+    frictionloss = mx.array(frictionloss)
     z = mx.zeros_like(frictionloss)
-    return _row(j, z, z, invweight, solref, solimp, z, frictionloss)
+    return _row(mx.array(j), z, z, mx.array(invweight),
+                mx.array(solref), mx.array(solimp), z, frictionloss)
 
   results = [
       _single_row(j_all[i], fl_all[i], iw_all[i], sr_all[i], si_all[i])
@@ -464,8 +464,8 @@ def _efc_limit_ball(m: Model, d: Data) -> Optional[_Efc]:
         j * active, pos * active, pos, invweight, solref, solimp, jnt_margin, z
     )
 
-  qposadr_s = int(m.jnt_qposadr[jnt_id])
-  dofadr_s = int(m.jnt_dofadr[jnt_id])
+  qposadr_s = np.asarray(m.jnt_qposadr)[jnt_id]
+  dofadr_s = np.asarray(m.jnt_dofadr)[jnt_id]
   range_s = m.jnt_range[jnt_id]
   margin_s = m.jnt_margin[jnt_id]
   solref_s = m.jnt_solref[jnt_id]
@@ -508,8 +508,8 @@ def _efc_limit_slide_hinge(m: Model, d: Data) -> Optional[_Efc]:
         j * active, pos * active, pos, invweight, solref, solimp, jnt_margin, z
     )
 
-  qposadr_s = int(m.jnt_qposadr[jnt_id])
-  dofadr_s = int(m.jnt_dofadr[jnt_id])
+  qposadr_s = np.asarray(m.jnt_qposadr)[jnt_id]
+  dofadr_s = np.asarray(m.jnt_dofadr)[jnt_id]
   range_s = m.jnt_range[jnt_id]
   margin_s = m.jnt_margin[jnt_id]
   solref_s = m.jnt_solref[jnt_id]

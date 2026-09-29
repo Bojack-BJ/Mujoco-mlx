@@ -935,6 +935,7 @@ class Model(MLXNode):
   signature: np.uint64
   _sizes: mx.array
   _impl: ModelMLX = None
+  mesh_convex: Tuple[ConvexMesh, ...] = ()
 
 
 @dataclasses.dataclass

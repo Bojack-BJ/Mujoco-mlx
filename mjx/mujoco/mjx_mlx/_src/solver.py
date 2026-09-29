@@ -92,7 +92,7 @@ class Context(PyTreeNode):
       mask = (d._impl or d).contact.dim > 1
       mask_idx = np.nonzero(mask)[0]
       if mask_idx.size > 0:
-        friction = (d._impl or d).contact.friction[mask_idx]
+        friction = (d._impl or d).contact.friction[mx.array(mask_idx)]
         friction = mx.array(friction) if not isinstance(friction, mx.array) else friction
         dim = (d._impl or d).contact.dim[mask_idx]
         mu = friction[:, 0] / mx.sqrt(m.opt.impratio)
@@ -327,7 +327,7 @@ def _update_constraint(m: Model, d: Data, ctx: Context) -> Context:
     dm, u, h = mx.array(0.0), mx.array(0.0), mx.array(0.0)
   elif m.opt.cone == ConeType.ELLIPTIC:
     friction_idx = np.nonzero((d._impl or d).contact.dim > 1)[0]
-    friction = (d._impl or d).contact.friction[friction_idx]
+    friction = (d._impl or d).contact.friction[mx.array(friction_idx)]
     friction = mx.array(friction) if not isinstance(friction, mx.array) else friction
     efc_address = (d._impl or d).contact.efc_address[friction_idx]
     dim = (d._impl or d).contact.dim[friction_idx]

@@ -20,6 +20,7 @@ Only the MLX (pure-array) backend is supported.
 """
 
 import copy
+import dataclasses
 import logging
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 

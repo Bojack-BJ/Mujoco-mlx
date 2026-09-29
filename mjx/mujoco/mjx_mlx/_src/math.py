@@ -261,7 +261,7 @@ def axis_angle_to_quat(axis: mx.array, angle: mx.array) -> mx.array:
   """
   s, c = mx.sin(angle * 0.5), mx.cos(angle * 0.5)
   # jp.insert(axis * s, 0, c) -> concatenate c at front
-  return mx.concatenate([mx.array([c]), axis * s])
+  return mx.concatenate([mx.reshape(c, (1,)), mx.array(axis) * s])
 
 
 def quat_integrate(q: mx.array, v: mx.array, dt: mx.array) -> mx.array:

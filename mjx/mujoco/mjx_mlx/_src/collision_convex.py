@@ -15,6 +15,8 @@
 """Convex collisions – MLX port."""
 
 import functools
+import dataclasses
+import numpy as np
 from typing import Callable, Tuple, Union
 
 import mlx.core as mx
@@ -100,6 +102,11 @@ def collider(ncon: int):
             )
             cur_fn = functools.partial(cur_fn, subgrid_size=key.subgrid_size)
 
+        infos = [dataclasses.replace(info, **{
+            field.name: mx.array(getattr(info, field.name))
+            for field in dataclasses.fields(info)
+            if isinstance(getattr(info, field.name), np.ndarray)
+        }) for info in infos]
         dist_i, pos_i, frame_i = cur_fn(*infos)
 
         # ensure batch dims
@@ -150,6 +157,7 @@ def _manifold_points(
     poly: mx.array, poly_mask: mx.array, poly_norm: mx.array
 ) -> mx.array:
   """Chooses four points on the polygon with approximately maximal area."""
+  poly = mx.array(poly)
   dist_mask = mx.where(poly_mask, mx.zeros(poly_mask.shape), mx.full(poly_mask.shape, -1e6))
   a_idx = mx.argmax(dist_mask)
   a = poly[a_idx]
@@ -179,7 +187,7 @@ def _manifold_points(
 @collider(ncon=4)
 def plane_convex(plane: GeomInfo, convex: ConvexInfo) -> Collision:
   """Calculates contacts between a plane and a convex object."""
-  vert = convex.vert
+  vert = mx.array(convex.vert)
 
   # get points in the convex frame
   plane_pos = convex.mat.T @ (plane.pos - convex.pos)
@@ -631,7 +639,7 @@ def _box_box_impl(
   best_sign = sign_arr[best_idx]
   best_axis = axes[best_idx]
   is_edge_contact = best_idx >= n_face_axes
-  is_edge_contact = is_edge_contact & (mx.abs(mx.sum(best_face_axis * best_axis)) < 0.99)
+  is_edge_contact = mx.array(is_edge_contact) & (mx.abs(mx.sum(best_face_axis * best_axis)) < 0.99)
 
   # get the (reference) face most aligned with the separating axis
   dist_a = normals_a @ best_axis

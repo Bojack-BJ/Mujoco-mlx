@@ -379,10 +379,7 @@ def make_condim(
 def collision(m: Model, d: Data) -> Data:
   """Collides geometries."""
   # MLX port: accept any Model/Data (no impl check needed — we only have MLX)
-  if d._impl is None:
-    return d  # no collision state to process
-
-  if (d._impl or d).ncon == 0:
+  if (d._impl or d).contact.dist.size == 0:
     return d
 
   max_geom_pairs = _numeric(m, 'max_geom_pairs')
