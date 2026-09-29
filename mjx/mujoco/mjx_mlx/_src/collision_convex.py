@@ -75,6 +75,7 @@ def collider(ncon: int):
       # slot so the constraint layout remains identical to the original model.
       pairs = np.asarray(geom).reshape((-1, 2))
       separated = np.zeros(n_pairs, dtype=bool)
+      margin = 0.
       if all(t in (GeomType.BOX, GeomType.MESH) for t in key.types):
         positions = np.asarray(d.geom_xpos)
         radius = np.asarray(m.geom_rbound)
@@ -87,22 +88,13 @@ def collider(ncon: int):
         gap = np.linalg.norm(positions[pairs[:, 0]] - positions[pairs[:, 1]], axis=1)
         separated = gap > radius[pairs].sum(axis=1) + margin + 1e-6
 
-      # Build per-pair infos and call fn in a loop (replaces jax.vmap)
-      results = []
-      for idx in range(n_pairs):
-        if separated[idx]:
-          results.append((mx.full((ncon,), margin + 1.),
-                          mx.zeros((ncon, 3)),
-                          mx.broadcast_to(mx.eye(3), (ncon, 3, 3))))
-          continue
-        gi1 = int(g1[idx]) if n_pairs > 1 else int(g1)
-        gi2 = int(g2[idx]) if n_pairs > 1 else int(g2)
+      if not n_pairs:
+        return mx.zeros((0,)), mx.zeros((0, 3)), mx.zeros((0, 3, 3))
 
-        infos = [
-            GeomInfo(d.geom_xpos[gi1], d.geom_xmat[gi1], m.geom_size[gi1]),
-            GeomInfo(d.geom_xpos[gi2], d.geom_xmat[gi2], m.geom_size[gi2]),
-        ]
-
+      # Geometry topology is fixed within a FunctionKey.  Pass dynamic arrays
+      # explicitly so MLX can batch the supported narrow-phase functions.
+      def single(pos1, mat1, size1, pos2, mat2, size2):
+        infos = [GeomInfo(pos1, mat1, size1), GeomInfo(pos2, mat2, size2)]
         cur_fn = fn
         for side in [0, 1]:
           if key.types[side] == GeomType.BOX:
@@ -129,25 +121,36 @@ def collider(ncon: int):
             if isinstance(getattr(info, field.name), np.ndarray)
         }) for info in infos]
         dist_i, pos_i, frame_i = cur_fn(*infos)
+        return (dist_i.reshape((ncon,)), pos_i.reshape((ncon, 3)),
+                frame_i.reshape((ncon, 3, 3)))
 
-        # ensure batch dims
-        if len(dist_i.shape) == 0:
-          dist_i = mx.expand_dims(dist_i, axis=0)
-        if len(pos_i.shape) == 1:
-          pos_i = mx.expand_dims(pos_i, axis=0)
-        if len(frame_i.shape) == 2:
-          frame_i = mx.expand_dims(frame_i, axis=0)
-        results.append((dist_i, pos_i, frame_i))
+      # Reuse one inactive block; reconstruct the original slot order with a
+      # gather instead of creating thousands of identical small array nodes.
+      results = [(mx.full((ncon,), margin + 1.), mx.zeros((ncon, 3)),
+                  mx.broadcast_to(mx.eye(3), (ncon, 3, 3)))]
+      active_ids = np.flatnonzero(~separated)
+      slot_map = np.zeros(n_pairs, dtype=np.int32)
+      slot_map[active_ids] = np.arange(1, len(active_ids) + 1)
+      if len(active_ids) > 1 and fn.__name__ in ('plane_convex', 'box_box'):
+        p = pairs[active_ids]
+        i1, i2 = mx.array(p[:, 0]), mx.array(p[:, 1])
+        args = (d.geom_xpos[i1], d.geom_xmat[i1], mx.array(m.geom_size)[i1],
+                d.geom_xpos[i2], d.geom_xmat[i2], mx.array(m.geom_size)[i2])
+        batched = mx.vmap(single)(*args)
+        blocks = tuple(mx.concatenate((inactive[None], active), axis=0)
+                       for inactive, active in zip(results[0], batched))
+      else:
+        for idx in active_ids:
+          gi1, gi2 = map(int, pairs[idx])
+          results.append(single(
+              d.geom_xpos[gi1], d.geom_xmat[gi1], mx.array(m.geom_size[gi1]),
+              d.geom_xpos[gi2], d.geom_xmat[gi2], mx.array(m.geom_size[gi2])))
+        blocks = tuple(mx.stack([r[i] for r in results]) for i in range(3))
 
-      if ncon > 1:
-        dist = mx.concatenate([r[0] for r in results])
-        pos = mx.concatenate([r[1] for r in results])
-        frame = mx.concatenate([r[2] for r in results])
-        return dist, pos, frame
-
-      dist = mx.concatenate([r[0] for r in results])
-      pos = mx.concatenate([r[1] for r in results])
-      frame = mx.concatenate([r[2] for r in results])
+      indices = mx.array(slot_map)
+      dist = blocks[0][indices].reshape(-1)
+      pos = blocks[1][indices].reshape((-1, 3))
+      frame = blocks[2][indices].reshape((-1, 3, 3))
       return dist, pos, frame
 
     collide.ncon = ncon
@@ -223,7 +226,7 @@ def plane_convex(plane: GeomInfo, convex: ConvexInfo) -> Collision:
   n = plane.mat[:, 2]
 
   frame = mx.stack([math.make_frame(n)] * 4, axis=0)
-  unique = mx.sum(mx.tril(mx.array([[int(idx[i] == idx[j]) for j in range(4)] for i in range(4)])), axis=1) == 1
+  unique = mx.sum(mx.tril((idx[:, None] == idx[None, :]).astype(mx.int32)), axis=1) == 1
   dist = mx.where(unique, -support[idx], mx.array(1.0))
   pos = pos - 0.5 * dist[:, None] * n
   return dist, pos, frame
@@ -652,11 +655,11 @@ def _box_box_impl(
   sign_arr = mx.stack([s[1] for s in supports])
 
   # get the best face axis
-  best_face_idx = int(mx.argmin(support[:n_face_axes]))
+  best_face_idx = mx.argmin(support[:n_face_axes])
   best_face_axis = axes[best_face_idx]
 
   # choose the best separating axis
-  best_idx = int(mx.argmin(support))
+  best_idx = mx.argmin(support)
   best_sign = sign_arr[best_idx]
   best_axis = axes[best_idx]
   is_edge_contact = best_idx >= n_face_axes
@@ -665,10 +668,10 @@ def _box_box_impl(
   # get the (reference) face most aligned with the separating axis
   dist_a = normals_a @ best_axis
   dist_b = normals_b @ best_axis
-  a_max = int(mx.argmax(dist_a))
-  b_max = int(mx.argmax(dist_b))
-  a_min = int(mx.argmin(dist_a))
-  b_min = int(mx.argmin(dist_b))
+  a_max = mx.argmax(dist_a)
+  b_max = mx.argmax(dist_b)
+  a_min = mx.argmin(dist_a)
+  b_min = mx.argmin(dist_b)
 
   ref_face = mx.where(best_sign > 0, faces_a[a_max], faces_b[b_max])
   ref_face_norm = mx.where(best_sign > 0, normals_a[a_max], normals_b[b_max])
@@ -686,10 +689,10 @@ def _box_box_impl(
   )
 
   # For edge contacts, use the clipped face point
-  idx = int(mx.argmin(dist))
+  idx = mx.argmin(dist)
   dist = mx.where(
       is_edge_contact,
-      mx.array([dist[idx], 1.0, 1.0, 1.0]),
+      mx.concatenate([dist[idx].reshape(1), mx.ones(3)]),
       dist,
   )
   pos = mx.where(is_edge_contact, mx.stack([pos[idx]] * 4), pos)
@@ -777,14 +780,14 @@ def _sat_gaussmap(
   is_face_separating = mx.any(separating)
 
   # choose the best separating axis
-  best_idx = int(mx.argmin(support))
+  best_idx = mx.argmin(support)
   best_axis = axes[best_idx]
 
   # get the (reference) face most aligned with the separating axis
   dist_a = normals_a @ best_axis
   dist_b = normals_b @ (-best_axis)
-  face_a_idx = int(mx.argmax(dist_a))
-  face_b_idx = int(mx.argmax(dist_b))
+  face_a_idx = mx.argmax(dist_a)
+  face_b_idx = mx.argmax(dist_b)
 
   cond = best_idx < normals_a.shape[0]
   ref_face = mx.where(cond, faces_a[face_a_idx], faces_b[face_b_idx])
@@ -849,7 +852,7 @@ def _sat_gaussmap(
   # ensure edges create minkowski face
   edge_dist = mx.where(is_minkowski_face, edge_dist, mx.array(-float('inf')))
 
-  best_edge_idx = int(mx.argmax(edge_dist))
+  best_edge_idx = mx.argmax(edge_dist)
   best_edge_dist = edge_dist[best_edge_idx]
   is_edge_contact = mx.where(
       mx.max(dist) < 0.0,
@@ -860,7 +863,7 @@ def _sat_gaussmap(
   normal = mx.where(is_edge_contact, edge_axes[best_edge_idx], normal)
   dist = mx.where(
       is_edge_contact,
-      mx.array([best_edge_dist, 1.0, 1.0, 1.0]),
+      mx.concatenate([best_edge_dist.reshape(1), mx.ones(3)]),
       dist,
   )
   a_closest, b_closest = math.closest_segment_to_segment_points(

@@ -333,8 +333,8 @@ def make_condim(
   """Returns the dims of the contacts for a Model."""
   if isinstance(m, mujoco.MjModel):
     sdf_initpoints = m.opt.sdf_initpoints
-  elif isinstance(m.opt._impl, OptionMLX):
-    sdf_initpoints = m.opt._impl.sdf_initpoints
+  elif isinstance(m, Model):
+    sdf_initpoints = getattr(m.opt._impl or m.opt, 'sdf_initpoints', 0)
   else:
     raise ValueError(
         'make_condim requires mujoco.MjModel or mjx_mlx.Model with MLX'
@@ -414,13 +414,7 @@ def collision(m: Model, d: Data) -> Data:
     dist, pos, frame = func(m, d, key, contact.geom)
     if ncon > 1:
       # repeat contacts to match the number of collisions returned
-      def _repeat_fn(x, r=ncon):
-        pieces = []
-        for i in range(x.shape[0]):
-          row = mx.expand_dims(x[i], 0)
-          pieces.append(mx.broadcast_to(row, (r,) + x.shape[1:]))
-        return mx.concatenate(pieces)
-      contact = _tree_map(_repeat_fn, contact)
+      contact = _tree_map(lambda x: mx.repeat(x, ncon, axis=0), contact)
     groups[key] = _dc.replace(contact, dist=dist, pos=pos, frame=frame)
 
   # collapse contacts together, ensuring they are grouped by condim

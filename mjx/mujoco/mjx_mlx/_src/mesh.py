@@ -210,7 +210,11 @@ def box(info: GeomInfo) -> ConvexInfo:
       edge,
       edge_face_normal,
   )
-  c = _tree_map(mx.array, c)
+  # tree_map treats NumPy leaves as static metadata. Convert topology here
+  # before multiplying by dynamic sizes (including mx.vmap tracers).
+  c = c.replace(vert=mx.array(vert), face=mx.array(face),
+                face_normal=mx.array(face_normal), edge=mx.array(edge),
+                edge_face_normal=mx.array(edge_face_normal))
   # Scale vert and face by size (element-wise broadcast: each vertex * size)
   vert = c.vert * info.size  # (n_vert, 3) * (3,) broadcasts correctly
   face = c.face * info.size  # (n_face, n_vert_per_face, 3) * (3,) broadcasts
