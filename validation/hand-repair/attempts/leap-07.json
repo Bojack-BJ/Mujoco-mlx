@@ -1,0 +1,13 @@
+{
+  "scene": "leap",
+  "steps_requested": 1,
+  "mujoco": "3.5.0",
+  "device": "Device(gpu, 0)",
+  "steps_completed": 0,
+  "tilt_rad": 0.0,
+  "vx": 0.0,
+  "cone_requested_for_cube": "pyramidal",
+  "allocated_contacts": 7016,
+  "error": "Traceback (most recent call last):\n  File \"$PROJECT/experiments/scripts/probe_mlx_repair.py\", line 52, in <module>\n    d = forward.step(x, d)\n        ^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 432, in step\n    d = implicit(m, d)\n        ^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 389, in implicit\n    qderiv = derivative.deriv_smooth_vel(m, d)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/derivative.py\", line 40, in deriv_smooth_vel\n    raise ValueError('deriv_smooth_vel requires MLX MJX implementation.')\nValueError: deriv_smooth_vel requires MLX MJX implementation.\n",
+  "total_elapsed_s": 2.729553083074279
+}

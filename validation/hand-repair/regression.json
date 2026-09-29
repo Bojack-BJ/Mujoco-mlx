@@ -1,0 +1,8 @@
+{
+  "tests_run": 9,
+  "success": true,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "log": "Failed to import warp: No module named 'warp'\nFailed to import mujoco_warp: No module named 'warp'\ntest_broadphase_preserves_active_contacts_and_slots (test_collision_optimization.CollisionRegression.test_broadphase_preserves_active_contacts_and_slots) ... ok\ntest_vectorized_gaussmap_matches_scalar (test_collision_optimization.CollisionRegression.test_vectorized_gaussmap_matches_scalar) ... ok\ntest_all_dimensions_and_cones_preserve_rows (test_constraint_batch.ConstraintBatchRegression.test_all_dimensions_and_cones_preserve_rows) ... ok\ntest_batched_kbi (test_constraint_batch.ConstraintBatchRegression.test_batched_kbi) ... ok\ntest_data_arrays_and_global_contact_metadata (test_constraint_batch.ConstraintBatchRegression.test_data_arrays_and_global_contact_metadata) ... ok\ntest_jacobian_against_native_and_scalar (test_constraint_batch.ConstraintBatchRegression.test_jacobian_against_native_and_scalar) ... ok\ntest_cone_blocks_gradient_linesearch_and_solve (test_solver_batch.SolverRegression.test_cone_blocks_gradient_linesearch_and_solve) ... ok\ntest_implicit_damping_and_joint_sensors_against_native (test_solver_batch.SolverRegression.test_implicit_damping_and_joint_sensors_against_native) ... ok\ntest_mixed_dimensions_with_limit_and_friction_rows (test_solver_batch.SolverRegression.test_mixed_dimensions_with_limit_and_friction_rows) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 7.453s\n\nOK\n"
+}

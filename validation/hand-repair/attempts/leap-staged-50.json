@@ -1,0 +1,1017 @@
+{
+  "steps_requested": 50,
+  "steps_completed": 50,
+  "events": [
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.8098839579615742
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.18666074995417148,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.09599566704127938
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.7569682080065832
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1702002079691738,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.12834645807743073
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.676474416977726
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.17384216596838087,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.19978825002908707
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6746196660678834
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1701427079970017,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.03837974998168647
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.7045804579975083
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.17291212501004338,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.040068708010949194
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6825384579133242
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.17156904190778732,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.053499915986321867
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6731341250706464
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.17065904196351767,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.049588666995987296
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.7109807080123574
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.17688633396755904,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.059022624976933
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6952110000420362
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16781616699881852,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.04180620901752263
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6486902089091018
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16649237496312708,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.049495209008455276
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6804896249668673
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16489954199641943,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.05673249997198582
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.8129347920184955
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.17594179196748883,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.040519542060792446
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.603597457986325
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.17210129206068814,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.03940191597212106
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6290515420259908
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1728114999132231,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.07043358299415559
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.5791753749363124
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16825079207774252,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.061436999938450754
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6671442500082776
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1709701670333743,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.05984583403915167
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 2.000188541947864
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1623707499820739,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.05931304197292775
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.645852499990724
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16495887492783368,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.06320299999788404
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.620565582998097
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1662116670049727,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.0576110000256449
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6281351660145447
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.17091600003186613,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.03937716595828533
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6596535829594359
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16622850007843226,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.041656958987005055
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6445000829407945
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1651593749411404,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.03829037491232157
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.8917897080536932
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16915295796934515,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.0525442078942433
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6585104590049013
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16837666695937514,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.058027708902955055
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6206145000178367
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16404470789711922,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.061651207972317934
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6268594999564812
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.17228658311069012,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.13493187504354864
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.621403833036311
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16180479095783085,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.07351783406920731
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.7249118339968845
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16514187504071742,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.06327358400449157
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.7188245420111343
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16959175001829863,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.08466666704043746
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 2.296512541011907
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1659884579712525,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.0397780000930652
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.711909499950707
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1685401670401916,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.06515308399684727
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.705893624923192
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1653851659502834,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.042416291078552604
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 2.107740084058605
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.20373362500686198,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.073141083936207
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 2.292082833009772
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.37140325002837926,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.08699262503068894
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 2.059625707915984
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.25153970799874514,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.12777479202486575
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 2.031553167034872
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16504300001543015,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.06017862493172288
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6564921669196337
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1670576670439914,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.05024154204875231
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.7003652090206742
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1705659170402214,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.07800816604867578
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.7062097920570523
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1645059590227902,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.03991033404599875
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.7072214169893414
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16871324996463954,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.043794000055640936
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.6808042919728905
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.17204299999866635,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.0433897499460727
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.7483985419385135
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16630137502215803,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.07918270793743432
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.70814679202158
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16240025009028614,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.13813124992884696
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.7794070419622585
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16794316610321403,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.1060377499088645
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.81111016694922
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.17747387499548495,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.16959945892449468
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.815396249992773
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16417216695845127,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.14231695793569088
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.7467249169712886
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.16567250003572553,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.14988191600423306
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.8878082920564339
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.1682216669432819,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.2953052499797195
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 2.115557999932207
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.19439295900519937,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.07815449999179691
+    },
+    {
+      "stage": "collision",
+      "status": "ok",
+      "seconds": 1.9736795829376206
+    },
+    {
+      "stage": "make_constraint",
+      "status": "ok",
+      "seconds": 0.22588349995203316,
+      "rows": 21080,
+      "contacts": 7016,
+      "metadata_contacts": 7016,
+      "active_contacts": 0
+    },
+    {
+      "stage": "solve",
+      "status": "ok",
+      "seconds": 0.05088887503370643
+    }
+  ],
+  "python": "3.11.16",
+  "mujoco": "3.5.0",
+  "mlx": "0.32.2",
+  "device": "Device(gpu, 0)",
+  "revision": "ba754f04c591d124d2e0fd864351d384c95543b6",
+  "dirty": true,
+  "model": "cube_scene.xml",
+  "xml_sha256": "112d25e944c5b781756b0faded8b3237db1e130c080bec0b050ef9d4a38c948f",
+  "status": "completed",
+  "max_qpos_error_mixed_units": 0.0006466456477141318,
+  "qpos_mlx": [
+    -0.024522623047232628,
+    -3.843764261546312e-06,
+    -0.006835836451500654,
+    -0.0010049196425825357,
+    -0.02452159859240055,
+    -3.847301286441507e-06,
+    -0.006835543550550938,
+    -0.0010048819240182638,
+    -0.02452121302485466,
+    -3.850192570098443e-06,
+    -0.006835021078586578,
+    -0.001004879828542471,
+    -0.021942269057035446,
+    6.357412348734215e-05,
+    0.00034185152617283165,
+    -0.00032976773218251765,
+    0.03500000014901161,
+    0.03500000014901161,
+    0.1699414849281311,
+    1.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "qpos_native": [
+    -0.02496866429910956,
+    -2.553957329159085e-06,
+    -0.006738528543812727,
+    -0.0013381093109730922,
+    -0.024968664299109565,
+    -2.553957329159047e-06,
+    -0.00673852854381273,
+    -0.0013381093109730911,
+    -0.024968130952776415,
+    -2.5540784461243336e-06,
+    -0.006737995445943627,
+    -0.0013381060626581496,
+    -0.02192960053271091,
+    0.00040826512420125474,
+    2.66091352325271e-06,
+    2.39029397129297e-06,
+    0.035,
+    0.035,
+    0.169969,
+    1.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "elapsed_s": 118.71897708298638
+}

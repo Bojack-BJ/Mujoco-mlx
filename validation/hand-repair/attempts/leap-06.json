@@ -1,0 +1,13 @@
+{
+  "scene": "leap",
+  "steps_requested": 1,
+  "mujoco": "3.5.0",
+  "device": "Device(gpu, 0)",
+  "steps_completed": 0,
+  "tilt_rad": 0.0,
+  "vx": 0.0,
+  "cone_requested_for_cube": "pyramidal",
+  "allocated_contacts": 7016,
+  "error": "Traceback (most recent call last):\n  File \"$PROJECT/experiments/scripts/probe_mlx_repair.py\", line 52, in <module>\n    d = forward.step(x, d)\n        ^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 425, in step\n    d = forward(m, d)\n        ^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 417, in forward\n    d = solver.solve(m, d)\n        ^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/solver.py\", line 679, in solve\n    ctx = Context.create(m, d)\n          ^^^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/solver.py\", line 130, in create\n    ctx = _update_constraint(m, d, ctx)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/solver.py\", line 399, in _update_constraint\n    h_i = h_i + (mu[i] * mu[i] - mu[i] * n[i] / t_clamped[i]) * mx.eye(6)\n                                                ~~~~~~~~~^^^\nRuntimeError: [metal::malloc] Resource limit (499000) exceeded.\n",
+  "total_elapsed_s": 10.79411533405073
+}

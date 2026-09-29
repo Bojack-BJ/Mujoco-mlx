@@ -1,0 +1,13 @@
+{
+  "scene": "leap",
+  "steps_requested": 1,
+  "mujoco": "3.5.0",
+  "device": "Device(gpu, 0)",
+  "steps_completed": 0,
+  "tilt_rad": 0.0,
+  "vx": 0.0,
+  "cone_requested_for_cube": "pyramidal",
+  "allocated_contacts": 7016,
+  "error": "Traceback (most recent call last):\n  File \"$PROJECT/experiments/scripts/probe_mlx_repair.py\", line 52, in <module>\n    d = forward.step(x, d)\n        ^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 425, in step\n    d = forward(m, d)\n        ^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 408, in forward\n    d = fwd_velocity(m, d)\n        ^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 74, in fwd_velocity\n    d = passive_mod.passive(m, d)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/passive.py\", line 194, in passive\n    qfrc_passive = _spring_damper(m, d)\n                   ^^^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/passive.py\", line 86, in _spring_damper\n    spring_T = mx.transpose(m.tendon_lengthspring)  # (2, ntendon)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: transpose(): incompatible function arguments. The following argument types are supported:\n    1. transpose(a: array, /, axes: Sequence[int] | None = None, *, stream: StreamOrDevice = None) -> array\n\nInvoked with types: ndarray\n",
+  "total_elapsed_s": 1.8197925830027089
+}

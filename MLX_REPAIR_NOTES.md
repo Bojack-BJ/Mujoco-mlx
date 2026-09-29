@@ -1,5 +1,15 @@
 # Experimental hand-contact repair
 
+## Latest: E012 constraint/solver repair
+
+Full LEAP now completes short runs, including a 10-step contact-state probe:
+34.39 s total, final cube translation error 0.042 mm and orientation error
+0.00254 rad (~0.146 degrees) versus native MuJoCo. Nine regression methods pass.
+This is still far too slow for hand PPO and is not long-horizon validation.
+The detailed [issue ledger](validation/hand-repair/ISSUES_AND_CHANGES.md), raw
+attempts, environment, asset hashes and [PR draft](validation/hand-repair/PR_DRAFT.md)
+are preserved for review. Entries below describe the earlier E011 checkpoint.
+
 Based on RobotFlow-Labs/Mujoco-mlx commit
 `5de472e576e5233d159c1a2c46bb4f70a75c2db4`.
 Changes are confined to the Python MLX port; MuJoCo C/C++ and official JAX MJX

@@ -1,0 +1,13 @@
+{
+  "scene": "leap",
+  "steps_requested": 1,
+  "mujoco": "3.5.0",
+  "device": "Device(gpu, 0)",
+  "steps_completed": 0,
+  "tilt_rad": 0.0,
+  "vx": 0.0,
+  "cone_requested_for_cube": "pyramidal",
+  "allocated_contacts": 7016,
+  "error": "Traceback (most recent call last):\n  File \"$PROJECT/experiments/scripts/probe_mlx_repair.py\", line 52, in <module>\n    d = forward.step(x, d)\n        ^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 425, in step\n    d = forward(m, d)\n        ^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 407, in forward\n    d = sensor.sensor_pos(m, d)\n        ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/sensor.py\", line 231, in sensor_pos\n    sensor = d.qpos[int(m.jnt_qposadr[objid])]\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: only 0-dimensional arrays can be converted to Python scalars\n",
+  "total_elapsed_s": 1.8690698749851435
+}

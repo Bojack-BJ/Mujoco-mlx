@@ -1,0 +1,13 @@
+{
+  "scene": "leap",
+  "steps_requested": 1,
+  "mujoco": "3.5.0",
+  "device": "Device(gpu, 0)",
+  "steps_completed": 0,
+  "tilt_rad": 0.0,
+  "vx": 0.0,
+  "cone_requested_for_cube": "pyramidal",
+  "allocated_contacts": 7016,
+  "error": "Traceback (most recent call last):\n  File \"$PROJECT/experiments/scripts/probe_mlx_repair.py\", line 52, in <module>\n    d = forward.step(x, d)\n        ^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 425, in step\n    d = forward(m, d)\n        ^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 406, in forward\n    d = fwd_position(m, d)\n        ^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/forward.py\", line 62, in fwd_position\n    d = constraint.make_constraint(m, d)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/constraint.py\", line 765, in make_constraint\n    efc = _tree_map(lambda *x: mx.concatenate(x, axis=0), *efcs)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/dataclasses.py\", line 86, in tree_map\n    return _tree_map_multi(fn, node, *rest)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/dataclasses.py\", line 135, in _tree_map_multi\n    mapped = _apply_to_arrays_multi(fn, *values)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/dataclasses.py\", line 104, in _apply_to_arrays_multi\n    return fn(*values)\n           ^^^^^^^^^^^\n  File \"$PROJECT/experiments/third_party/Mujoco-mlx/mjx/mujoco/mjx_mlx/_src/constraint.py\", line 765, in <lambda>\n    efc = _tree_map(lambda *x: mx.concatenate(x, axis=0), *efcs)\n                               ^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: concatenate(): incompatible function arguments. The following argument types are supported:\n    1. concatenate(arrays: list[array], axis: int | None = 0, *, stream: StreamOrDevice = None) -> array\n\nInvoked with types: tuple, kwargs = { axis: int }\n",
+  "total_elapsed_s": 1.729633582988754
+}

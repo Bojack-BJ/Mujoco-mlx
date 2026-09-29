@@ -1,0 +1,38 @@
+{
+  "status": "completed",
+  "steps": 10,
+  "elapsed_s": 34.385098958038725,
+  "max_qpos_error_mixed": 0.001264161489856086,
+  "active_contacts": [
+    0,
+    8,
+    8,
+    0,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+  ],
+  "stage_seconds": {
+    "collision": {
+      "mean": 2.1412967458250933,
+      "min": 2.088410417083651,
+      "max": 2.2370904580457136
+    },
+    "make_constraint": {
+      "mean": 0.16821247097104788,
+      "min": 0.1614143329206854,
+      "max": 0.17324341693893075
+    },
+    "solve": {
+      "mean": 0.7506703458027915,
+      "min": 0.3185250830138102,
+      "max": 1.1886203750036657
+    }
+  },
+  "final_joint_max_rad": 0.00007388575760138941,
+  "final_cube_position_error_m": 0.000042017256788169275,
+  "final_cube_orientation_error_rad": 0.0025439623397583476
+}

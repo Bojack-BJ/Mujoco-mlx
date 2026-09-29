@@ -1,0 +1,17 @@
+{
+  "date": "2026-09-29",
+  "hardware": "Apple M5 Pro",
+  "python": "3.11.16",
+  "machine": "arm64",
+  "macos": "26.5.1",
+  "packages": {
+    "mujoco": "3.5.0",
+    "mujoco-mjx": "3.5.0",
+    "mlx": "0.32.2",
+    "mlx-metal": "0.32.2",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2"
+  }
+}
