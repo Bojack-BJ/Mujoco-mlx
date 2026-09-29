@@ -37,7 +37,6 @@ from mujoco.mjx_mlx._src.types import IntegratorType
 from mujoco.mjx_mlx._src.types import JointType
 from mujoco.mjx_mlx._src.types import Model
 from mujoco.mjx_mlx._src.types import TrnType
-from mujoco.mjx_mlx._src.dataclasses import tree_map
 import numpy as np
 
 # RK4 tableau
@@ -352,16 +351,18 @@ def rungekutta4(m: Model, d: Data) -> Data:
 
   kqvel = d.qvel  # intermediate RK solution
   # RK solutions sum
-  qvel = tree_map(lambda k: B[0] * k, kqvel) if isinstance(kqvel, mx.array) else B[0] * kqvel
-  qacc = B[0] * d.qacc
-  act_dot_sum = B[0] * d.act_dot
+  # The local tree_map accepts dataclasses, not bare arrays. Python scalars
+  # also prevent NumPy tableau weights from coercing MLX state to host arrays.
+  qvel = float(B[0]) * kqvel
+  qacc = float(B[0]) * d.qacc
+  act_dot_sum = float(B[0]) * d.act_dot
 
   integrate_fn = lambda *args: _integrate_pos(*args, dt=m.opt.timestep)
 
   # Unroll 3 RK4 stages (replacing jax.lax.scan with Python loop)
   for stage in range(3):
-    a = A[stage][stage]  # diagonal of A
-    b = B[stage + 1]
+    a = float(A[stage][stage])  # diagonal of A
+    b = float(B[stage + 1])
     t = T[stage]
 
     # get intermediate RK solutions
@@ -414,6 +415,7 @@ def forward(m: Model, d: Data) -> Data:
 
   if (d._impl or d).efc_J.size == 0:
     d = d.replace(qacc=d.qacc_smooth, qfrc_constraint=mx.zeros((m.nv,)))
+    d = d.tree_replace({'_impl.solver_niter': mx.array(0)})
   else:
     d = solver.solve(m, d)
   d = sensor.sensor_acc(m, d)

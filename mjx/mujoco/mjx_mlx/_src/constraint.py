@@ -139,14 +139,14 @@ def _efc_equality_connect(m: Model, d: Data) -> Optional[_Efc]:
 
   # Vectorized over eq_id (replaces jax.vmap)
   def _single_row(is_site, obj1id, obj2id, body1id, body2id, data, solref, solimp, active):
+    data = mx.array(data)
     anchor1, anchor2 = data[0:3], data[3:6]
 
     pos1 = d.xmat[body1id] @ anchor1 + d.xpos[body1id]
     pos2 = d.xmat[body2id] @ anchor2 + d.xpos[body2id]
 
-    if m.nsite:
-      pos1 = mx.where(is_site, d.site_xpos[obj1id], pos1)
-      pos2 = mx.where(is_site, d.site_xpos[obj2id], pos2)
+    if is_site:
+      pos1, pos2 = d.site_xpos[obj1id], d.site_xpos[obj2id]
 
     # error is difference in global positions
     pos = pos1 - pos2
@@ -179,7 +179,7 @@ def _efc_equality_connect(m: Model, d: Data) -> Optional[_Efc]:
   data_s = m.eq_data[eq_id]
   solref_s = m.eq_solref[eq_id]
   solimp_s = m.eq_solimp[eq_id]
-  active_s = d.eq_active[eq_id]
+  active_s = d.eq_active[mx.array(eq_id)]
 
   results = [
       _single_row(
@@ -203,6 +203,7 @@ def _efc_equality_weld(m: Model, d: Data) -> Optional[_Efc]:
     return None
 
   def _single_row(is_site, obj1id, obj2id, body1id, body2id, data, solref, solimp, active):
+    data = mx.array(data)
     anchor1, anchor2 = data[0:3], data[3:6]
     relpose, torquescale = data[6:10], data[10]
 
@@ -210,9 +211,8 @@ def _efc_equality_weld(m: Model, d: Data) -> Optional[_Efc]:
     pos1 = d.xmat[body1id] @ anchor2 + d.xpos[body1id]
     pos2 = d.xmat[body2id] @ anchor1 + d.xpos[body2id]
 
-    if m.nsite:
-      pos1 = mx.where(is_site, d.site_xpos[obj1id], pos1)
-      pos2 = mx.where(is_site, d.site_xpos[obj2id], pos2)
+    if is_site:
+      pos1, pos2 = d.site_xpos[obj1id], d.site_xpos[obj2id]
 
     cpos = pos1 - pos2
 
@@ -226,15 +226,9 @@ def _efc_equality_weld(m: Model, d: Data) -> Optional[_Efc]:
     quat = math.quat_mul(d.xquat[body1id], relpose)
     quat1 = math.quat_inv(d.xquat[body2id])
 
-    if m.nsite:
-      quat = mx.where(
-          is_site, math.quat_mul(d.xquat[body1id], m.site_quat[obj1id]), quat
-      )
-      quat1 = mx.where(
-          is_site,
-          math.quat_inv(math.quat_mul(d.xquat[body2id], m.site_quat[obj2id])),
-          quat1,
-      )
+    if is_site:
+      quat = math.quat_mul(d.xquat[body1id], mx.array(m.site_quat[obj1id]))
+      quat1 = math.quat_inv(math.quat_mul(d.xquat[body2id], mx.array(m.site_quat[obj2id])))
 
     crot = math.quat_mul(quat1, quat)[1:]  # copy axis components
 
@@ -248,7 +242,7 @@ def _efc_equality_weld(m: Model, d: Data) -> Optional[_Efc]:
     j = mx.concatenate([jacdifp.T, jacdifr_corrected.T])
     pos_imp = math.norm(pos)
     invweight = m.body_invweight0[body1id] + m.body_invweight0[body2id]
-    invweight = mx.repeat(invweight, 3, axis=0)
+    invweight = mx.repeat(mx.array(invweight), 3, axis=0)
     zero = mx.zeros_like(pos)
 
     efc = _row(j, pos, pos_imp, invweight, solref, solimp, zero, zero)
@@ -270,7 +264,7 @@ def _efc_equality_weld(m: Model, d: Data) -> Optional[_Efc]:
   data_s = m.eq_data[eq_id]
   solref_s = m.eq_solref[eq_id]
   solimp_s = m.eq_solimp[eq_id]
-  active_s = d.eq_active[eq_id]
+  active_s = d.eq_active[mx.array(eq_id)]
 
   results = [
       _single_row(
@@ -295,6 +289,7 @@ def _efc_equality_joint(m: Model, d: Data) -> Optional[_Efc]:
     return None
 
   def _single_row(obj2id, data, solref, solimp, active, dofadr1, dofadr2, qposadr1, qposadr2):
+    data = mx.array(data)
     pos1, pos2 = d.qpos[qposadr1], d.qpos[qposadr2]
     ref1, ref2 = m.qpos0[qposadr1], m.qpos0[qposadr2]
     dif = (pos2 - ref2) * (obj2id > -1)
@@ -319,12 +314,15 @@ def _efc_equality_joint(m: Model, d: Data) -> Optional[_Efc]:
   eq_data_s = m.eq_data[eq_id]
   eq_solref_s = m.eq_solref[eq_id]
   eq_solimp_s = m.eq_solimp[eq_id]
-  eq_active_s = d.eq_active[eq_id]
+  eq_active_s = d.eq_active[mx.array(eq_id)]
 
-  dofadr1 = int(m.jnt_dofadr[eq_obj1id_s])
-  dofadr2 = int(m.jnt_dofadr[eq_obj2id_s])
-  qposadr1 = int(m.jnt_qposadr[eq_obj1id_s])
-  qposadr2 = int(m.jnt_qposadr[eq_obj2id_s])
+  # These are one address per equality, not scalar addresses.  Convert the
+  # individual entries inside the loop; int(array) breaks multiple equalities
+  # and would leave a non-subscriptable int for a single equality.
+  dofadr1 = np.asarray(m.jnt_dofadr)[eq_obj1id_s]
+  dofadr2 = np.asarray(m.jnt_dofadr)[eq_obj2id_s]
+  qposadr1 = np.asarray(m.jnt_qposadr)[eq_obj1id_s]
+  qposadr2 = np.asarray(m.jnt_qposadr)[eq_obj2id_s]
 
   results = [
       _single_row(

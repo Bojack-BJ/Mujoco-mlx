@@ -32,10 +32,11 @@ from mujoco.mjx_mlx._src.types import OptionMLX
 
 def _spring_damper(m: Model, d: Data) -> mx.array:
   """Applies joint level spring and damping forces."""
-  # Early return if no springs or damping
+  # Joint coefficients alone do not describe tendon springs/dampers.  A model
+  # with only tendon elasticity still needs the tendon force calculation below.
   stiff = np.array(m.jnt_stiffness) if hasattr(m, 'jnt_stiffness') else np.zeros(0)
   damp = np.array(m.dof_damping) if hasattr(m, 'dof_damping') else np.zeros(0)
-  if not np.any(stiff != 0) and not np.any(damp != 0):
+  if not m.ntendon and not np.any(stiff != 0) and not np.any(damp != 0):
     return mx.zeros((m.nv,))
 
   def fn(jnt_typs, stiffness, qpos_spring, qpos):
@@ -72,9 +73,9 @@ def _spring_damper(m: Model, d: Data) -> mx.array:
         'jjqq',
         'v',
         m.jnt_type,
-        m.jnt_stiffness,
-        m.qpos_spring,
-        d.qpos,
+        mx.array(m.jnt_stiffness),
+        mx.array(m.qpos_spring),
+        mx.array(d.qpos),
     )
 
   # dof-level dampers
@@ -89,8 +90,9 @@ def _spring_damper(m: Model, d: Data) -> mx.array:
     spring_T = mx.transpose(mx.array(m.tendon_lengthspring))  # (2, ntendon)
     below = spring_T[0] - d.ten_length
     above = spring_T[1] - d.ten_length
-    frc_spring = mx.where(below > 0, m.tendon_stiffness * below, 0)
-    frc_spring = mx.where(above < 0, m.tendon_stiffness * above, frc_spring)
+    stiffness = mx.array(m.tendon_stiffness)
+    frc_spring = mx.where(below > 0, stiffness * below, 0)
+    frc_spring = mx.where(above < 0, stiffness * above, frc_spring)
   else:
     frc_spring = mx.zeros((m.ntendon,))
 

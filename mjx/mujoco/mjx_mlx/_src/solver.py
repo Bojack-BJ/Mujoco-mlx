@@ -87,7 +87,9 @@ class Context(PyTreeNode):
     jaref = (d._impl or d).efc_J @ qacc - (d._impl or d).efc_aref
     ma = support.mul_m(m, d, qacc)
     nv_0 = mx.zeros(m.nv)
-    fri = mx.array(0.0)
+    # Keep the elliptic contact axis even when a model only has joint/equality
+    # constraints.  Line search must not index a scalar as a cone batch.
+    fri = mx.zeros((0, 6)) if m.opt.cone == ConeType.ELLIPTIC else mx.array(0.0)
     if m.opt.cone == ConeType.ELLIPTIC:
       mask = (d._impl or d).contact.dim > 1
       mask_idx = np.nonzero(mask)[0]
@@ -207,7 +209,7 @@ class _LSPoint(PyTreeNode):
       quad = mx.where(use_neg, qf_neg, quad)
       quad = mx.where(use_pos, qf_pos, quad)
 
-    if m.opt.cone == ConeType.ELLIPTIC:
+    if m.opt.cone == ConeType.ELLIPTIC and ctx.fri.shape[0]:
       mu = ctx.fri[:, 0]
       u0 = ctx.u[:, 0]
       n = u0 + alpha * v0
@@ -250,7 +252,9 @@ class _LSPoint(PyTreeNode):
       cost = cost + 0.5 * mx.sum(dm * mx.square(nmt))
       deriv_0 = deriv_0 + mx.sum(dm * nmt * (n1 - mu * t1))
       deriv_1 = deriv_1 + mx.sum(dm * (mx.square(n1 - mu * t1) - nmt * mu * t2))
-    elif m.opt.cone == ConeType.PYRAMIDAL:
+    elif m.opt.cone in (ConeType.PYRAMIDAL, ConeType.ELLIPTIC):
+      # With no friction cones, elliptic models have the same scalar equality,
+      # friction-loss and unilateral constraint cost as pyramidal models.
       quad = quad * active[:, None]  # only active
       quad_total = quad_total + mx.sum(quad, axis=0)
     else:
@@ -335,9 +339,9 @@ def _update_constraint(m: Model, d: Data, ctx: Context) -> Context:
     # Gather Jaref slices for each elliptic contact
     addresses = mx.array(efc_address[:, None] + np.arange(6)[None, :])
     jaref_padded = mx.concatenate([ctx.Jaref, mx.zeros(5)])
-    u = jaref_padded[addresses] * ctx.fri if len(dim) else mx.array(0.0)
+    u = jaref_padded[addresses] * ctx.fri if len(dim) else mx.zeros((0, 6))
 
-    if isinstance(u, mx.array) and u.ndim >= 2:
+    if len(dim):
       mu = ctx.fri[:, 0]
       n = u[:, 0]
       t = mx.sqrt(mx.sum(u[:, 1:] * u[:, 1:], axis=1))
@@ -392,7 +396,7 @@ def _update_constraint(m: Model, d: Data, ctx: Context) -> Context:
     else:
       efc_force = (d._impl or d).efc_D * -ctx.Jaref * active + floss_force
       cost = 0.5 * mx.sum((d._impl or d).efc_D * ctx.Jaref * ctx.Jaref * active)
-      dm, u, h = mx.array(0.0), mx.array(0.0), mx.array(0.0)
+      dm, u, h = mx.zeros((0,)), mx.zeros((0, 6)), mx.zeros((0, 6, 6))
   else:
     raise NotImplementedError(f'unsupported cone type: {m.opt.cone}')
 
@@ -656,6 +660,7 @@ def solve(m: Model, d: Data) -> Data:
       'qfrc_constraint': ctx.qfrc_constraint,
       'qacc': ctx.qacc,
       '_impl.efc_force': ctx.efc_force,
+      '_impl.solver_niter': ctx.solver_niter,
   })
 
   return d
