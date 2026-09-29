@@ -13,7 +13,8 @@ a = p.parse_args()
 log = io.StringIO()
 with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
     suite = unittest.defaultTestLoader.loadTestsFromNames([
-        'test_collision_optimization','test_constraint_batch','test_solver_batch'])
+        'test_collision_optimization','test_constraint_batch','test_solver_batch',
+        'test_audit_edge_cases', 'test_io_roundtrip'])
     result = unittest.TextTestRunner(stream=log,verbosity=2).run(suite)
 report = dict(tests_run=result.testsRun,success=result.wasSuccessful(),
               failures=len(result.failures),errors=len(result.errors),
