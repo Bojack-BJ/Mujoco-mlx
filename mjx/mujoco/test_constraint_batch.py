@@ -33,6 +33,22 @@ def scene(dim=3, cone='elliptic'):
 
 
 class ConstraintBatchRegression(unittest.TestCase):
+    def test_data_arrays_and_global_contact_metadata(self):
+        import dataclasses
+        m, x, d = scene()
+        def check(node):
+            for f in dataclasses.fields(node):
+                value = getattr(node,f.name)
+                if f.type is mx.array:
+                    self.assertIsInstance(value,mx.array,f.name)
+                elif dataclasses.is_dataclass(value):
+                    check(value)
+        check(io.make_data(m))
+        impl = d._impl or d
+        self.assertEqual(impl.contact.dim.size,impl.contact.dist.size)
+        self.assertEqual(impl.contact.efc_address.size,impl.contact.dist.size)
+        self.assertIsInstance(impl.contact.dim,np.ndarray)
+
     def test_jacobian_against_native_and_scalar(self):
         m, x, d = scene()
         native = mujoco.MjData(m)

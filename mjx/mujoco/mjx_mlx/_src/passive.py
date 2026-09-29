@@ -79,7 +79,10 @@ def _spring_damper(m: Model, d: Data) -> mx.array:
 
   # dof-level dampers
   if not m.opt.disableflags & DisableBit.DAMPER:
-    qfrc = qfrc - m.dof_damping * d.qvel
+    qfrc = qfrc - mx.array(m.dof_damping) * d.qvel
+
+  if not m.ntendon:
+    return qfrc
 
   # tendon-level springs
   if not m.opt.disableflags & DisableBit.SPRING:
@@ -93,7 +96,7 @@ def _spring_damper(m: Model, d: Data) -> mx.array:
 
   # tendon-level dampers
   if not m.opt.disableflags & DisableBit.DAMPER:
-    frc_damper = -m.tendon_damping * (d._impl or d).ten_velocity
+    frc_damper = -mx.array(m.tendon_damping) * (d._impl or d).ten_velocity
   else:
     frc_damper = mx.zeros((m.ntendon,))
 

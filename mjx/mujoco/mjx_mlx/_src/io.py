@@ -37,6 +37,20 @@ import scipy
 
 def _numpy_to_mlx(tree):
   """Convert all numpy arrays in a dataclass tree to MLX arrays."""
+  if isinstance(tree, types.Data):
+    # tree_map intentionally skips NumPy metadata, so it cannot perform this
+    # initial conversion. Follow declared field types for Data and its nested
+    # structures, retaining contact.dim/efc_address and efc_type on the host.
+    def convert_data(node):
+      updates = {}
+      for field in dataclasses.fields(node):
+        value = getattr(node, field.name)
+        if field.type is mx.array and isinstance(value, np.ndarray):
+          updates[field.name] = mx.array(value)
+        elif dataclasses.is_dataclass(value):
+          updates[field.name] = convert_data(value)
+      return dataclasses.replace(node, **updates)
+    return convert_data(tree)
   from mujoco.mjx_mlx._src import dataclasses as mjx_dataclasses  # pylint: disable=g-import-not-at-top
 
   def _convert(value):

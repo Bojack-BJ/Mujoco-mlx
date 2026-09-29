@@ -32,11 +32,7 @@ from mujoco.mjx_mlx._src.types import OptionMLX
 
 def deriv_smooth_vel(m: Model, d: Data) -> Optional[mx.array]:
   """Analytical derivative of smooth forces w.r.t. velocities."""
-  if (
-      not isinstance(m._impl, ModelMLX)
-      or not isinstance(d._impl, DataMLX)
-      or not isinstance(m.opt._impl, OptionMLX)
-  ):
+  if not isinstance(m, Model) or not isinstance(d, Data):
     raise ValueError('deriv_smooth_vel requires MLX MJX implementation.')
 
   qderiv = None
@@ -59,15 +55,15 @@ def deriv_smooth_vel(m: Model, d: Data) -> Optional[mx.array]:
   # qDeriv += d qfrc_passive / d qvel
   if not m.opt.disableflags & DisableBit.DAMPER:
     if qderiv is None:
-      qderiv = -mx.diag(m.dof_damping)
+      qderiv = -mx.diag(mx.array(m.dof_damping))
     else:
-      qderiv -= mx.diag(m.dof_damping)
+      qderiv -= mx.diag(mx.array(m.dof_damping))
     if m.ntendon:
-      qderiv -= (d._impl or d).ten_J.T @ mx.diag(m.tendon_damping) @ (d._impl or d).ten_J
+      qderiv -= (d._impl or d).ten_J.T @ mx.diag(mx.array(m.tendon_damping)) @ (d._impl or d).ten_J
 
   if not m.opt.disableflags & (DisableBit.DAMPER | DisableBit.SPRING):
     # TODO(robotics-simulation): fluid drag model
-    if m.opt._impl.has_fluid_params:  # pytype: disable=attribute-error
+    if m.opt.density > 0 or m.opt.viscosity > 0:
       raise NotImplementedError('fluid drag not supported for implicitfast')
 
   # TODO(team): rne derivative

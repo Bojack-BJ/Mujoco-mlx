@@ -155,9 +155,9 @@ def fwd_actuation(m: Model, d: Data) -> Data:
       'uuuuuuuuu',
       'u',
       m.actuator_gaintype,
-      m.actuator_gainprm,
+      mx.array(m.actuator_gainprm),
       m.actuator_biastype,
-      m.actuator_biasprm,
+      mx.array(m.actuator_biasprm),
       d.actuator_length,
       (d._impl or d).actuator_velocity,
       ctrl_act,
@@ -301,12 +301,12 @@ def _advance(
   act = _next_activation(m, d, act_dot)
 
   # advance velocities
-  d = d.replace(qvel=d.qvel + qacc * m.opt.timestep)
+  d = d.replace(qvel=mx.array(d.qvel) + qacc * m.opt.timestep)
 
   # advance positions with qvel if given, d.qvel otherwise (semi-implicit)
   qvel = d.qvel if qvel is None else qvel
   integrate_fn = lambda *args: _integrate_pos(*args, dt=m.opt.timestep)
-  qpos = scan.flat(m, integrate_fn, 'jqv', 'q', m.jnt_type, d.qpos, qvel)
+  qpos = scan.flat(m, integrate_fn, 'jqv', 'q', m.jnt_type, mx.array(d.qpos), mx.array(qvel))
 
   # advance time
   time = d.time + m.opt.timestep
@@ -396,7 +396,9 @@ def implicit(m: Model, d: Data) -> Data:
     # Use direct linear solve: qacc = qm^{-1} @ qfrc
     qfrc = d.qfrc_smooth + d.qfrc_constraint
     # MLX linalg solve: solve qm @ qacc = qfrc
-    qacc = mx.linalg.solve(qm, qfrc)
+    # MLX 0.32 does not implement dense solve on Metal. This is the small nv x nv
+    # implicit integration system, not a CPU fallback for the whole simulation.
+    qacc = mx.linalg.solve(qm, qfrc, stream=mx.cpu)
 
   return _advance(m, d, d.act_dot, qacc)
 
@@ -411,10 +413,9 @@ def forward(m: Model, d: Data) -> Data:
   d = fwd_acceleration(m, d)
 
   if (d._impl or d).efc_J.size == 0:
-    d = d.replace(qacc=d.qacc_smooth)
-    return d
-
-  d = solver.solve(m, d)
+    d = d.replace(qacc=d.qacc_smooth, qfrc_constraint=mx.zeros((m.nv,)))
+  else:
+    d = solver.solve(m, d)
   d = sensor.sensor_acc(m, d)
 
   return d
