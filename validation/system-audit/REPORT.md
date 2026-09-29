@@ -2,6 +2,11 @@
 
 Date: 2026-09-29. Decision: **improved, but not accepted as a native MuJoCo / PPO replacement**.
 
+Later result: [E014](../contact-parity/REPORT.md) fixes an independent joint
+velocity bug; the same 50-step gates and a 100-step extension now pass. E013's
+failures below remain historical evidence, not the latest trajectory verdict.
+Training-backend replacement is still not established.
+
 Latest acceptance mode: launch a fresh process with **`MLX_ENABLE_TF32=0`**.
 25/25 repair methods pass in that mode. Paired collision speedup is **9.46×**;
 the 50-step action trace runs at **1.369 physical steps/s** but still fails both

@@ -2,7 +2,27 @@
 
 Not submitted. Intended upstream: RobotFlow-Labs/Mujoco-mlx.
 
-## E013 addendum (latest evidence)
+## E014 addendum (latest evidence)
+
+An independent native/JAX/MLX investigation finds a small reviewable correctness
+fix in `smooth.com_vel`: compute a free/ball joint's rotational derivatives from
+the same incoming velocity before adding its full velocity contribution. The
+old sequential updates create spurious gyroscopic terms (0.08 N m on an
+isotropic spinning cube). Three independent native-oracle tests fail before
+and pass after. This is suitable for a focused correctness PR separate from
+the broader performance branch; implementation and tests are isolated in
+commit `219ec7c7`.
+
+The [contact attribution report](../contact-parity/REPORT.md) retains 15 minimal
+box fixtures and three-way same-state dynamics. Shallow-contact omissions and
+the four-slot manifold are shared with official MJX 3.5.0; no clipping threshold
+change is proposed. Final regression count: 30/30. The exact E013 50-step hand
+trace now passes the unchanged gates, at 0.0532 mm / 0.0585° maximum cube error;
+100 steps also pass at 0.0532 mm / 0.0763°. Throughput remains about 1.29 physical
+steps/s and the extension covers only 0.2 simulated seconds. Do not claim
+native equivalence, long-horizon validation, environment batching or PPO speedup.
+
+## E013 addendum (historical evidence)
 
 Late precision finding: on M5, default float32 matrix operations produce a
 mass-matrix error of 4.39e-5 for this model. The documented process setting

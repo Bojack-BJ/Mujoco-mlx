@@ -100,3 +100,16 @@ Final full-float32 regressions: 25/25. Paired collision: 9.46× improvement.
 Both default and full-float32 50-step action traces still fail physical acceptance.
 Run physics in a fresh process with `MLX_ENABLE_TF32=0`; no native/PPO replacement
 is claimed. The entries below preserve the E012 failure chain without rewriting it.
+
+## Subsequent E014 attribution and local dynamics fix
+
+| ID | Observation | Root cause / evidence |
+| --- | --- | --- |
+| V1 | Spinning isotropic free cube has nonzero rotational bias; anisotropic and parented-ball cases disagree with native | `com_vel` updates velocity between rotational axes of the same joint. Compute their derivatives from the common incoming velocity, then accumulate the joint. Three native-oracle methods fail before and pass after. |
+| A1 | Native sees a shallow step-50 LEAP contact that MLX omits | Fifteen minimal box cases match official MJX distance/position exactly, normals within 5.96e-8. Both array backends share the shallow omission. A diagnostic threshold ablation is retained but not landed. |
+| A2 | Earlier 50-step full-float32 trace fails | After V1 alone, the same initial qpos/controls/native endpoint and error gates pass: max 0.0532 mm / 0.0585°. A 100-step extension also passes (0.0532 mm / 0.0763°), not a long-horizon guarantee. |
+
+Final new regression suite: 30/30. The complete [E014 record](../contact-parity/REPORT.md)
+preserves the diagnostic harness failure, before/after assertions and original
+contact mismatch; no test tolerance or production collision mask was relaxed.
+Physics speed remains approximately 1.29 steps/s, so no PPO backend promotion.

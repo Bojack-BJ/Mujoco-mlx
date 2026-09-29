@@ -1,0 +1,29 @@
+{
+  "status": "failed",
+  "audit_note": "First diagnostic adapter did not provide the size batch required by official mesh.box. Superseded after fixing only the harness, not official MJX.",
+  "cases": [],
+  "diagnostic_only": true,
+  "MLX_ENABLE_TF32": "0",
+  "scope": "Two-box collision only: no original hand dynamics or integration. Identical float32 world geometry for JAX/MLX. Native retains float64 XML geometry.",
+  "ablation": "Temporary MLX strict penetration predicate >0 instead of >1e-6; not a committed physics change and not evidence of general superiority.",
+  "mujoco": "3.5.0",
+  "jax": "0.10.2",
+  "official_mjx_path": "$MLX_ENV/lib/python3.11/site-packages/mujoco/mjx/__init__.py",
+  "official_collision_path": "$MLX_ENV/lib/python3.11/site-packages/mujoco/mjx/_src/collision_convex.py",
+  "jax_devices": [
+    "cpu:0"
+  ],
+  "mlx_device": "Device(gpu, 0)",
+  "revision": "26c814f791a4f2a7aff85ad77f479686bc6f7f72",
+  "source_hashes": {
+    "official_collision": "f8e959481d73eaadb0a8d94b31237296270f80ae17b0dd8d25f3b8d4a2722a7f",
+    "mlx_collision": "6a089784871c6ab22f95cb2eb0fc0992f799a15d54fa5ee3d03d5628b17e2afd"
+  },
+  "native_replay_verified": true,
+  "error": "Traceback (most recent call last):\n  File \"$REPO/mjx/mujoco/audit_contact_parity.py\", line 169, in worker\n    jo=jkernel(*(jp.array(v) for v in inputs));jax.block_until_ready(jo)\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$REPO/mjx/mujoco/audit_contact_parity.py\", line 91, in jkernel\n    return jc._box_box(jm.box(JGeomInfo(p1,r1,s1)), jm.box(JGeomInfo(p2,r2,s2)))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$MLX_ENV/lib/python3.11/site-packages/mujoco/mjx/_src/collision_convex.py\", line 703, in _box_box\n    dist, pos, normal = _box_box_impl(\n                        ^^^^^^^^^^^^^^\n  File \"$MLX_ENV/lib/python3.11/site-packages/mujoco/mjx/_src/collision_convex.py\", line 638, in _box_box_impl\n    support, sign = get_support(axes, degenerate_axes)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$MLX_ENV/lib/python3.11/site-packages/mujoco/mjx/_src/collision_convex.py\", line 629, in get_support\n    support_a = jax.vmap(dot, in_axes=[None, 0])(axis, vertices_a)\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$BASE_ENV/lib/python3.11/site-packages/jax/_src/numpy/tensor_contractions.py\", line 122, in dot\n    result = lax.dot_general(a, b, dimension_numbers=(contract_dims, batch_dims),\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: dot_general requires contracting dimensions to have the same shape, got (3,) and (8,).\n--------------------\nFor simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.\n",
+  "timed_out": false,
+  "worker_returncode": 1,
+  "stdout_tail": "Failed to import warp: No module named 'warp'\nFailed to import mujoco_warp: No module named 'warp'\n",
+  "stderr_tail": "",
+  "wall_seconds": 1.6156474170275033
+}

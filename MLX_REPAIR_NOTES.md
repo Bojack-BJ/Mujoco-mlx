@@ -1,6 +1,23 @@
 # Experimental hand-contact repair
 
-## Latest: E013 systematic audit
+## Latest: E014 contact attribution and joint velocity repair
+
+Fixed an MLX-only `com_vel` bug: a free/ball joint's angular derivatives must
+use the same incoming velocity before accumulating the joint contribution.
+Three native-oracle tests fail before and pass after the fix. Including frozen
+official box-contact checks, 30/30 regression methods pass. The unchanged full
+50-step LEAP gates now pass: maximum translation 0.0532 mm, orientation 0.0585°.
+A 100-step extension also passes (0.0532 mm / 0.0763°), but only 0.2 s of simulated
+time is covered and throughput remains 1.29 physical steps/s. No PPO replacement
+or training speedup is established.
+
+Fifteen asset-free contact cases also show that the shallow missed contact and
+four-slot manifolds are shared with official MJX 3.5.0, not specific to MLX.
+No collision threshold or native/JAX code was changed. See the
+[E014 report](validation/contact-parity/REPORT.md) for before/after failures,
+three-way reference data, fixtures, reproduction and explicit limitations.
+
+## Previous: E013 systematic audit
 
 **Physics runs on M5 must launch with `MLX_ENABLE_TF32=0`.** The default reduced
 matrix precision corrupts mass matrices; a new native mass-matrix regression

@@ -15,7 +15,8 @@ log = io.StringIO()
 with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
     suite = unittest.defaultTestLoader.loadTestsFromNames([
         'test_collision_optimization','test_constraint_batch','test_solver_batch',
-        'test_audit_edge_cases', 'test_io_roundtrip'])
+        'test_audit_edge_cases', 'test_io_roundtrip', 'test_joint_velocity',
+        'test_official_box_contacts'])
     result = unittest.TextTestRunner(stream=log,verbosity=2).run(suite)
 report = dict(tests_run=result.testsRun,success=result.wasSuccessful(),
               MLX_ENABLE_TF32=os.environ.get('MLX_ENABLE_TF32', '1 (MLX default)'),
